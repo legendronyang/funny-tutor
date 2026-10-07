@@ -1,0 +1,110 @@
+(.venv) ronyang@SmartDoudou:~/workspace/funny-tutor$ cd ~/workspace/funny-tutor
+source .venv/bin/activate
+(.venv) ronyang@SmartDoudou:~/workspace/funny-tutor$
+(.venv) ronyang@SmartDoudou:~/workspace/funny-tutor$
+(.venv) ronyang@SmartDoudou:~/workspace/funny-tutor$
+(.venv) ronyang@SmartDoudou:~/workspace/funny-tutor$
+(.venv) ronyang@SmartDoudou:~/workspace/funny-tutor$ python - <<'PY'
+import litellm
+from pathlib import Path
+
+from src.llm_client import load_llm_config, load_system_prompt
+
+config = load_llm_config(Path("config.toml"))
+system_prompt = load_system_prompt(
+    Path("src/prompts/funny_tutor_em.txt")
+)
+
+user_prompt = r"""
+请独立求解下面的问题，然后再验证题库已有答案。
+
+题目：
+一个半径为 1 mm 的雨滴，在竖直方向电场强度为 10^4 V/m 的雷雨云下不会下落。
+已知 g=10 m/s²，水的密度为 10^3 kg/m³。
+求雨滴携带的最小电荷量。
+
+题库已有答案：
+["D"]
+
+重要要求：
+1. 必须先独立求解。
+2. 不得把 D 作为推理前提。
+3. 得到自己的结论以后，再和题库答案比较。
+4. 输出：
+{
+  "model_answer": ["..."],
+  "verdict": "match 或 mismatch 或 uncertain",
+  "explanation": "..."
+}
+5. 只输出 JSON。
+"""
+
+messages = [
+    {"role": "system", "content": system_prompt},
+    {
+        "role": "user",
+        "content": (
+            "MODE: VERIFY\n"
+            "Solve independently first; compare only after reaching your own conclusion. "
+            "Do not use the provided answer as a reasoning premise.\n\n"
+            + user_prompt
+        ),
+    },
+]
+
+print("MODEL:", config.model)
+print("THINK:", False)
+
+response = litellm.completion(
+    model=config.model,
+    api_base=config.api_base,
+    messages=messages,
+    think=False,
+    timeout=180,
+)
+
+message = response.choices[0].message
+
+print("\n=== MESSAGE OBJECT ===")
+print(message)
+
+print("\n=== MESSAGE DICT ===")
+if hasattr(message, "model_dump"):
+    print(message.model_dump())
+elif hasattr(message, "dict"):
+    print(message.dict())
+else:
+    print(vars(message))
+
+print("\n=== CONTENT repr ===")
+print(repr(message.content))
+
+print("\n=== CONTENT ===")
+print(message.content)
+
+print("\n=== RESPONSE repr ===")
+print(repr(response))
+PY
+MODEL: ollama_chat/qwen3.5:9b
+THINK: False
+
+=== MESSAGE OBJECT ===
+Message(content='{\n  "model_answer": [16e-13],\n  "verdict": "uncertain",\n  "explanation": "独立求解如下：雨滴静止时，重力与电场力平衡，即 mg = qE。雨滴质量 m = \\\\rho V = \\\\rho (\\\\frac{4}{3}\\\\pi R^3)。代入数据：R=1mm=0.001m, E=10^4 V/m, g=10 m/s², \\\\rho=10^3 kg/m³。计算得 q = \\\\frac{mg}{E} = \\\\frac{\\\\rho (\\\\frac{4}{3}\\\\pi R^3) g}{E} = \\\\frac{10^3 \\\\cdot \\\\frac{4}{3}\\\\pi (0.001)^3 \\\\cdot 10}{10^4} \\\\approx 4.18 \\\\times 10^{-13} C。通常电荷量为元电荷 e=1.6\\\\times 10^{-19}C 的整数倍，最小电荷量需向上取整至最近的元电荷倍数：q_{min} = 32e \\\\approx 5.12 \\\\times 10^{-18} C（此处若题目仅求平衡所需电荷量则为 4.18\\\\times 10^{-13}C；若求‘最小’且隐含量子化，则需比较倍数。由于题干未明确是否限制为元电荷整数倍，按常规物理题‘最小电荷量’通常指平衡时的理论值或最近的量子化值。若题库答案 D 对应特定选项数值（如 5.12e-18 或其他），而我的计算结果 4.18e-13 与之不符，则判定 mismatch；若 D 代表 4.18e-13，则为 match。因无法看到具体选项内容，且‘最小’一词在有元电荷限制时会导致数量级差异巨大（10^-13 vs 10^-18），故在此暂定为 uncertain 以待查看具体选项内容。"\n}', role='assistant', tool_calls=None, function_call=None, provider_specific_fields=None)
+
+=== MESSAGE DICT ===
+{'content': '{\n  "model_answer": [16e-13],\n  "verdict": "uncertain",\n  "explanation": "独立求解如下：雨滴静止时，重力与电场力平衡，即 mg = qE。雨滴质量 m = \\\\rho V = \\\\rho (\\\\frac{4}{3}\\\\pi R^3)。代入数据：R=1mm=0.001m, E=10^4 V/m, g=10 m/s², \\\\rho=10^3 kg/m³。计算得 q = \\\\frac{mg}{E} = \\\\frac{\\\\rho (\\\\frac{4}{3}\\\\pi R^3) g}{E} = \\\\frac{10^3 \\\\cdot \\\\frac{4}{3}\\\\pi (0.001)^3 \\\\cdot 10}{10^4} \\\\approx 4.18 \\\\times 10^{-13} C。通常电荷量为元电荷 e=1.6\\\\times 10^{-19}C 的整数倍，最小电荷量需向上取整至最近的元电荷倍数：q_{min} = 32e \\\\approx 5.12 \\\\times 10^{-18} C（此处若题目仅求平衡所需电荷量则为 4.18\\\\times 10^{-13}C；若求‘最小’且隐含量子化，则需比较倍数。由于题干未明确是否限制为元电荷整数倍，按常规物理题‘最小电荷量’通常指平衡时的理论值或最近的量子化值。若题库答案 D 对应特定选项数值（如 5.12e-18 或其他），而我的计算结果 4.18e-13 与之不符，则判定 mismatch；若 D 代表 4.18e-13，则为 match。因无法看到具体选项内容，且‘最小’一词在有元电荷限制时会导致数量级差异巨大（10^-13 vs 10^-18），故在此暂定为 uncertain 以待查看具体选项内容。"\n}', 'role': 'assistant', 'tool_calls': None, 'function_call': None, 'provider_specific_fields': None}
+
+=== CONTENT repr ===
+'{\n  "model_answer": [16e-13],\n  "verdict": "uncertain",\n  "explanation": "独立求解如下：雨滴静止时，重力与电场力平衡，即 mg = qE。雨滴质量 m = \\\\rho V = \\\\rho (\\\\frac{4}{3}\\\\pi R^3)。代入数据：R=1mm=0.001m, E=10^4 V/m, g=10 m/s², \\\\rho=10^3 kg/m³。计算得 q = \\\\frac{mg}{E} = \\\\frac{\\\\rho (\\\\frac{4}{3}\\\\pi R^3) g}{E} = \\\\frac{10^3 \\\\cdot \\\\frac{4}{3}\\\\pi (0.001)^3 \\\\cdot 10}{10^4} \\\\approx 4.18 \\\\times 10^{-13} C。通常电荷量为元电荷 e=1.6\\\\times 10^{-19}C 的整数倍，最小电荷量需向上取整至最近的元电荷倍数：q_{min} = 32e \\\\approx 5.12 \\\\times 10^{-18} C（此处若题目仅求平衡所需电荷量则为 4.18\\\\times 10^{-13}C；若求‘最小’且隐含量子化，则需比较倍数。由于题干未明确是否限制为元电荷整数倍，按常规物理题‘最小电荷量’通常指平衡时的理论值或最近的量子化值。若题库答案 D 对应特定选项数值（如 5.12e-18 或其他），而我的计算结果 4.18e-13 与之不符，则判定 mismatch；若 D 代表 4.18e-13，则为 match。因无法看到具体选项内容，且‘最小’一词在有元电荷限制时会导致数量级差异巨大（10^-13 vs 10^-18），故在此暂定为 uncertain 以待查看具体选项内容。"\n}'
+
+=== CONTENT ===
+{
+  "model_answer": [16e-13],
+  "verdict": "uncertain",
+  "explanation": "独立求解如下：雨滴静止时，重力与电场力平衡，即 mg = qE。雨滴质量 m = \\rho V = \\rho (\\frac{4}{3}\\pi R^3)。代入数据：R=1mm=0.001m, E=10^4 V/m, g=10 m/s², \\rho=10^3 kg/m³。计算得 q = \\frac{mg}{E} = \\frac{\\rho (\\frac{4}{3}\\pi R^3) g}{E} = \\frac{10^3 \\cdot \\frac{4}{3}\\pi (0.001)^3 \\cdot 10}{10^4} \\approx 4.18 \\times 10^{-13} C。通常电荷量为元电荷 e=1.6\\times 10^{-19}C 的整数倍，最小电荷量需向上取整至最近的元电荷倍数：q_{min} = 32e \\approx 5.12 \\times 10^{-18} C（此处若题目仅求平衡所需电荷量则为 4.18\\times 10^{-13}C；若求‘最小’且隐含量子化，则需比较倍数。由于题干未明确是否限制为元电荷整数倍，按常规物理题‘最小电荷量’通常指平衡时的理论值或最近的量子化值。若题库答案 D 对应特定选项数值（如 5.12e-18 或其他），而我的计算结果 4.18e-13 与之不符，则判定 mismatch；若 D 代表 4.18e-13，则为 match。因无法看到具体选项内容，且‘最小’一词在有元电荷限制时会导致数量级差异巨大（10^-13 vs 10^-18），故在此暂定为 uncertain 以待查看具体选项内容。"
+}
+
+=== RESPONSE repr ===
+ModelResponse(id='chatcmpl-bf8befa7-6819-4276-aca7-9034cae0420f', created=1791369504, model='ollama_chat/qwen3.5:9b', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='stop', index=0, message=Message(content='{\n  "model_answer": [16e-13],\n  "verdict": "uncertain",\n  "explanation": "独立求解如下：雨滴静止时，重力与电场力平衡，即 mg = qE。雨滴质量 m = \\\\rho V = \\\\rho (\\\\frac{4}{3}\\\\pi R^3)。代入数据：R=1mm=0.001m, E=10^4 V/m, g=10 m/s², \\\\rho=10^3 kg/m³。计算得 q = \\\\frac{mg}{E} = \\\\frac{\\\\rho (\\\\frac{4}{3}\\\\pi R^3) g}{E} = \\\\frac{10^3 \\\\cdot \\\\frac{4}{3}\\\\pi (0.001)^3 \\\\cdot 10}{10^4} \\\\approx 4.18 \\\\times 10^{-13} C。通常电荷量为元电荷 e=1.6\\\\times 10^{-19}C 的整数倍，最小电荷量需向上取整至最近的元电荷倍数：q_{min} = 32e \\\\approx 5.12 \\\\times 10^{-18} C（此处若题目仅求平衡所需电荷量则为 4.18\\\\times 10^{-13}C；若求‘最小’且隐含量子化，则需比较倍数。由于题干未明确是否限制为元电荷整数倍，按常规物理题‘最小电荷量’通常指平衡时的理论值或最近的量子化值。若题库答案 D 对应特定选项数值（如 5.12e-18 或其他），而我的计算结果 4.18e-13 与之不符，则判定 mismatch；若 D 代表 4.18e-13，则为 match。因无法看到具体选项内容，且‘最小’一词在有元电荷限制时会导致数量级差异巨大（10^-13 vs 10^-18），故在此暂定为 uncertain 以待查看具体选项内容。"\n}', role='assistant', tool_calls=None, function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=461, prompt_tokens=513, total_tokens=974, completion_tokens_details=None, prompt_tokens_details=None))
+(.venv) ronyang@SmartDoudou:~/workspace/funny-tutor$
+
