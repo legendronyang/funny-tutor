@@ -4,6 +4,140 @@
 > Repository: legendronyang/funny-tutor  
 > Purpose: Persist the investigation state for turning local Qwen3.5:9B into an efficient coding agent, with emphasis on long-context efficiency, low-entropy context handoff, structured tool calling, reproducible benchmarking, and fault isolation.
 
+
+## 0. Session handoff — decisive state as of 2026-10-07
+
+### 0.1 Core problem this session is solving
+
+The engineering objective is to turn local **Qwen3.5:9B** into a practical coding agent for the remaining funny-tutor work on the current CPU-only WSL environment.
+
+The investigation is not merely about raw model speed. The actual optimization target is:
+
+> **Maximize useful coding work per unit wall-clock time by minimizing context inflation, avoiding unnecessary model/runner reloads, preserving structured tool calling, and maintaining a deterministic low-entropy task state.**
+
+The session therefore treats the Agent Runtime as a systems stack:
+
+~~~text
+Agent Runtime
+    ↓
+request construction / context compilation
+    ↓
+protocol translation
+    ↓
+LiteLLM
+    ↓
+Ollama runner
+    ↓
+Qwen3.5:9B
+    ↓
+tool execution / next turn
+~~~
+
+A central methodological rule is:
+
+> **Never attribute an Agent-level failure to Qwen until the equivalent lower-level model and protocol path has been independently validated.**
+
+### 0.2 Test scenario map
+
+| Scenario | Purpose | Result |
+|---|---|---|
+| Direct Ollama, Qwen3.5:9B, warm, 16K, think=false | Establish raw model baseline | PASS; ~2.18 s tiny prompt |
+| Direct Ollama structured tool call | Verify Qwen can emit native tool calls | PASS |
+| LiteLLM OpenAI-compatible route | Verify routing, text, tool calling, streaming, and parameter propagation | PASS |
+| LiteLLM Gemini-native route | Verify Gemini-compatible text/function calling/AUTO/streaming | PASS |
+| Gemini CLI Agent Runtime | Measure real context injection, transport behavior, and actual tool execution | Context inflation confirmed; pseudo-tool problem remains unresolved |
+
+### 0.3 Evidence hierarchy
+
+**Level A — direct model/runtime facts**
+
+- Qwen3.5:9B + Ollama + 16K works.
+- Native structured tool calling works.
+- CPU generation is approximately 6 tok/s in the observed environment.
+- Full prompt prefill is approximately 37 tok/s in the measured 2026-10-07 curve.
+
+**Level B — protocol facts**
+
+- LiteLLM OpenAI-compatible text/tool/streaming works.
+- LiteLLM Gemini-native text/functionCall/AUTO/streaming works.
+- num_ctx=16384 propagates to Ollama on the OpenAI-compatible path.
+- The same num_ctx does not propagate on the Gemini-native path.
+
+**Level C — Agent Runtime facts**
+
+- Gemini CLI injects a large generic system instruction.
+- Exact captured baseline request: systemInstruction 21,434 chars; contents 1,785 chars; tools 637 chars.
+- Removing thinkingConfig does not change the downstream Gemini replay promptTokenCount: both are 2050.
+- Gemini CLI read_file still produces pseudo-tool text instead of a structured tool execution event.
+
+### 0.4 Current architecture finding
+
+The most important architectural mismatch currently observed is:
+
+~~~text
+Gemini CLI model semantics:
+    gemini-2.5-pro
+        + Gemini-specific generationConfig
+        + thinkingBudget=8192
+
+              ↓
+
+LiteLLM alias:
+    gemini-2.5-pro → local-qwen
+
+              ↓
+
+Actual execution:
+    Qwen3.5:9B via Ollama
+~~~
+
+Therefore a single model identifier is simultaneously being interpreted as:
+
+1. a Gemini CLI model profile, and
+2. a LiteLLM routing alias to a local Qwen model.
+
+This is a configuration-semantics mismatch and should be treated as an architectural risk even though it is not the demonstrated cause of the 2050-token truncation.
+
+### 0.5 Current low-entropy state
+
+~~~yaml
+objective: turn local Qwen3.5:9B into an efficient coding agent
+repo: /home/ronyang/workspace/funny-tutor
+model: qwen3.5:9b
+model_alias_in_cli: gemini-2.5-pro
+ollama_context_control:
+  openai_compatible: 16384
+  gemini_native: not propagated; Ollama runner observed at 4096
+thinking:
+  gemini_cli_baseline: enabled, thinkingBudget=8192
+  no_thinking_replay: removed from generationConfig
+tools:
+  read_file: declared and translated to Ollama tools on Gemini-native path
+skills:
+  disabled_for_controlled_cli_test
+retries:
+  retryFetchErrors: false
+  maxAttempts: 1
+
+settled:
+  - Qwen native tool calling works
+  - LiteLLM OpenAI tool calling works
+  - LiteLLM Gemini-native function calling works
+  - Gemini-native AUTO function calling works
+  - Gemini-native tools schema reaches Ollama
+  - Gemini-native path drops num_ctx=16384
+  - Ollama truncates a 5655-token request to an effective 2050-token input with a 4096 runner
+  - the 12:27 OpenAI control request really used a 16384 runner
+  - its ~80 s latency was dominated by cold 16384 runner/model load + 326 generated reasoning tokens
+  - removing thinkingConfig did not change promptTokenCount=2050 on Gemini-native replay
+
+open:
+  - exact root cause of Gemini CLI 'fetch failed'
+  - exact cause of Gemini CLI pseudo-tool output
+  - whether Gemini CLI can be made to use the OpenAI-compatible LiteLLM route cleanly
+  - whether a thin Python Agent Runtime should replace Gemini CLI
+~~~
+
 ## 1. Executive summary
 
 The original goal was to turn the local Qwen3.5:9B model into a practical coding agent for the remaining work in funny-tutor.
@@ -873,11 +1007,17 @@ Cannot measure phase 'cleanup_ops'
 
 are telemetry/metrics anomalies. There is no evidence that they consume the observed 60+ seconds.
 
-### 14.5 Gemini-native LiteLLM context propagation still needs cleanup
+### 14.5 Gemini-native LiteLLM context propagation — now experimentally localized
 
-One observed Gemini-native request caused Ollama to show a 4K runner afterward, even though the LiteLLM OpenAI path honored num_ctx=16384.
+The downstream request capture proves that the Gemini-native path sent model=qwen3.5:9b, stream=false, think=null, keep_alive=null, and only temperature/top_p in options; num_ctx was absent. Ollama therefore ran the request with a 4096-context runner and logged truncating input prompt with limit=2050, prompt=5655, new=2050.
 
-Therefore production benchmarking must independently verify that the Gemini-native path preserves the intended 16K context and keep-alive behavior.
+A matched OpenAI-compatible control request sent options.num_ctx=16384, and Ollama subsequently launched llama-server with -c 16384 and initialized n_ctx_slot=16384.
+
+Conclusion:
+
+> The missing 16K context is not a generic LiteLLM configuration failure; it is specific to the Gemini-native → Ollama translation path observed in this environment/version.
+
+The same capture also proves that the Gemini-native path translates the read_file tool schema successfully.
 
 ### 14.6 LiteLLM had a non-blocking logging issue
 
@@ -911,13 +1051,24 @@ T_total =
 
 The current tests demonstrate that these terms can differ by orders of magnitude.
 
-Latest retry-disabled Gemini CLI failure:
+Latest replay/control evidence:
 
 ~~~text
-T_total ≈ 62 s
-dominant term ≈ first fetch/request wait before failure
-Qwen generation ≠ dominant term
+Gemini-native replay:
+  downstream prompt = 5655 tokens
+  Ollama effective prompt = 2050 tokens
+  cached prefix = 2046 tokens
+  measured request ≈ 8.49 s
+
+OpenAI-compatible control:
+  input = 17 tokens
+  runner creation/load ≈ 23.5 s
+  prompt eval ≈ 0.90 s
+  generation = 326 tokens at ≈ 5.98 tok/s
+  total ≈ 79.96 s
 ~~~
+
+The ~62 s Gemini CLI fetch-failure experiment remains a separate transport symptom; it must not be conflated with the ~80 s OpenAI-compatible Qwen generation/load experiment.
 
 Warm direct Qwen:
 
@@ -1197,10 +1348,198 @@ The credentials should be rotated and moved to a safer secret mechanism. Future 
 
 All performance claims in this document should be treated as environment-specific measurements from the stated WSL/CPU configuration, not universal benchmarks for the model.
 
+
+## 21.5. Decisive downstream capture findings — 2026-10-07
+
+### Gemini CLI captured baseline request
+
+Persisted capture:
+
+~~~text
+~/gemini-forensics/gemini-cli-baseline.json
+~~~
+
+Measured text sizes:
+
+| Component | Size |
+|---|---:|
+| systemInstruction | 21,434 chars |
+| contents | 1,785 chars |
+| tools | 637 chars |
+| generationConfig | Gemini CLI gemini-2.5-pro preset |
+| thinkingConfig | includeThoughts=true, thinkingBudget=8192 |
+
+A matched no-thinking capture removed thinkingConfig, but both Gemini-native replays reported:
+
+~~~text
+promptTokenCount = 2050
+~~~
+
+Therefore:
+
+> thinkingBudget=8192 is not the demonstrated source of the 2050-token input truncation.
+
+### Gemini-native → Ollama real request
+
+Captured downstream request:
+
+~~~json
+{
+  "model": "qwen3.5:9b",
+  "stream": false,
+  "think": null,
+  "keep_alive": null,
+  "options": {
+    "temperature": 1,
+    "top_p": 0.95
+  },
+  "message_count": 2
+}
+~~~
+
+Message sizes:
+
+~~~text
+system = 21,430 chars
+user   = 1,781 chars
+~~~
+
+The read_file tool schema was present downstream in standard OpenAI/Ollama function format.
+
+No num_ctx was present.
+
+### Ollama evidence for the Gemini-native request
+
+Ollama logged:
+
+~~~text
+n_ctx_slot = 4096
+truncating input prompt
+    limit = 2050
+    prompt = 5655
+    new = 2050
+~~~
+
+The request then restored a cached 2046-token checkpoint and re-evaluated only 4 new prompt tokens. Consequently the observed 8.49 s replay is a cache-hit latency result, not a full 2050-token prefill benchmark.
+
+### OpenAI-compatible control request
+
+The matched control request used only a 30-character user prompt, but the captured downstream Ollama request contained:
+
+~~~json
+{
+  "model": "qwen3.5:9b",
+  "stream": false,
+  "options": {
+    "num_ctx": 16384
+  }
+}
+~~~
+
+Ollama then launched:
+
+~~~text
+llama-server ... -c 16384
+llama_context: n_ctx = 16384
+load_model: ... n_ctx_slot = 16384
+~~~
+
+Observed timing:
+
+~~~text
+runner/model load   ≈ 23.5 s
+prompt eval         ≈ 0.90 s / 17 tokens
+generation          ≈ 54.39 s / 326 tokens
+generation rate     ≈ 5.98 tok/s
+total               ≈ 79.96 s
+~~~
+
+The ~80 s wall clock is therefore primarily cold 16K runner/model initialization plus Qwen reasoning generation, not prompt-prefill cost.
+
+### Decisive comparison
+
+~~~text
+                         Gemini-native          OpenAI-compatible
+                         -------------          -----------------
+num_ctx downstream      missing                16384
+Ollama context           4096                   16384
+large system prompt      yes (21.4 KB)          no
+tool schema              yes                    not used in control
+prompt truncation        yes: 5655 → 2050       no
+Qwen function schema     preserved              not tested here
+~~~
+
+This is the current strongest protocol-level finding in the session.
+
 ## 22. Final state
 
-The current investigation can be compressed to one statement:
+The investigation has moved from broad performance debugging to a localized protocol/Agent-runtime problem.
 
-> The Qwen3.5:9B + Ollama + 16K + LiteLLM foundation is technically validated. The remaining engineering problem is to make the Agent Runtime thin, deterministic, low-entropy, transport-stable, and capable of preserving structured tool calls — either by fixing the Gemini CLI request/transport path or by replacing its runtime role with a purpose-built Python Agent Runtime.
+### What is proven
 
-The next productive move is therefore **not** another broad “why is the model slow?” investigation. It is targeted protocol/transport isolation at the Gemini CLI boundary, followed by a data-driven decision on whether Gemini CLI should remain the Agent Runtime at all.
+1. **Qwen3.5:9B itself is viable for the target role.** Warm direct 16K inference is fast for tiny prompts, full-prompt prefill is measurable and approximately linear at about 37 tok/s, and native structured tool calling works.
+2. **LiteLLM itself is viable.** Both OpenAI-compatible and Gemini-native text/function-calling paths work, including streaming. Gemini-native AUTO function calling works.
+3. **The Gemini CLI is the major context-inflation source.** The exact captured request contains a 21.4 KB system instruction for a tiny user request.
+4. **The 2050-token effective input is an Ollama 4096-runner consequence in the observed Gemini-native path.** The actual prompt was 5655 tokens and Ollama explicitly logged truncation to 2050.
+5. **The Gemini-native route loses Ollama-specific runtime parameters observed here.** In particular, num_ctx=16384 was absent from the downstream request, while the OpenAI-compatible route propagated it correctly.
+6. **Tool-schema translation is not the main blocker.** The Gemini-native downstream request did contain the read_file tool schema.
+7. **The 80 s OpenAI-compatible control result is not evidence that 16K context is inherently slow.** It was dominated by first-time 16K runner/model initialization and 326 generated reasoning tokens.
+
+### What remains open
+
+~~~text
+A. Gemini CLI transport
+   Why does the minimal one-attempt request still fail with
+   TypeError: fetch failed after about 62 s?
+
+B. Gemini CLI structured tool execution
+   Why does the CLI path produce pseudo-tool text while the manually
+   constructed Gemini-native request produces a real functionCall?
+
+C. Runtime architecture
+   Can Gemini CLI be configured to use an OpenAI-compatible LiteLLM route
+   with explicit Qwen/Ollama runtime parameters?
+
+D. Production design
+   If Gemini CLI remains awkward or semantically mismatched, should a thin
+   Python Agent Runtime own:
+       - compact task state
+       - context compilation
+       - explicit tool loop
+       - deterministic Qwen runtime parameters
+       - retry/error policy
+~~~
+
+### Current engineering direction
+
+The next experiment should not be another generic performance benchmark.
+
+The next decision point is:
+
+~~~text
+Can Gemini CLI → OpenAI-compatible LiteLLM → Ollama → Qwen3.5:9B
+preserve the desired runtime semantics cleanly?
+~~~
+
+If yes, this may provide a simpler path to controlled local-agent execution.
+
+If no, the evidence increasingly favors a purpose-built Python Agent Runtime with a low-entropy persistent state/context compiler.
+
+### Reproducibility rule
+
+Before the next experiment:
+
+- keep ~/gemini-forensics/ captures
+- do not commit raw captures containing runtime internals or secrets
+- always record model identity and actual Ollama runner context with ollama ps
+- distinguish cold-runner load from warm inference
+- distinguish cache-hit prompt evaluation from full prompt prefill
+- when comparing protocols, inspect the actual downstream request, not only the ingress configuration
+
+The canonical evolving investigation document is:
+
+~~~text
+docs/local-qwen-coding-agent-performance-and-context-engineering-2026-10-07.md
+~~~
+
+Future sessions should update this file with new settled evidence, unresolved hypotheses, test conditions, and the next single highest-information-gain action rather than repeating already settled experiments.
