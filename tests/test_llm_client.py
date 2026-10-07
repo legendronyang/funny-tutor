@@ -82,7 +82,7 @@ def test_complete_json_uses_ollama_thinking_policy(
 
     client = LLMClient(
         LLMConfig(
-            model="ollama_chat/qwen3.5:9b",
+            model="ollama_chat/qwen3.5:9b-opencode",
             api_base="http://localhost:11434",
             think_generate=False,
             think_verify=True,
@@ -106,7 +106,7 @@ def test_complete_json_uses_ollama_thinking_policy(
     assert len(captured_calls) == 2
 
     generate_call, verify_call = captured_calls
-    assert generate_call["model"] == "ollama_chat/qwen3.5:9b"
+    assert generate_call["model"] == "ollama_chat/qwen3.5:9b-opencode"
     assert generate_call["api_base"] == "http://localhost:11434"
     assert generate_call["think"] is False
     assert verify_call["think"] is True
