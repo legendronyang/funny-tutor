@@ -1,0 +1,116 @@
+Funny Tutor — Task 2 Verify A/B think=False experiment
+Started (UTC): 2026-10-07T11:05:24.388272+00:00
+Repository root: /home/ronyang/workspace/funny-tutor
+Question fixture: /home/ronyang/workspace/funny-tutor/data/questions_em.json
+Config: /home/ronyang/workspace/funny-tutor/config.toml
+System prompt: /home/ronyang/workspace/funny-tutor/src/prompts/funny_tutor_em.txt
+Output log: /home/ronyang/workspace/funny-tutor/test_logs/test_verify_think_off_ab.log
+
+FORMAL CONFIGURATION:
+  model=ollama_chat/qwen3.5:9b
+  api_base=http://localhost:11434
+  think_generate=False
+  think_verify=True
+TEMPORARY TEST OVERRIDE:
+  think_verify=False
+
+TARGET QUESTION:
+  year=2010, category=（全国卷ⅱ）, index=1
+  Complete question loaded from data/questions_em.json.
+  Fixture answer (external oracle)=['B']
+
+========================================================================================
+TEST CASE: task2-verify-think-off-A
+Provided answer: ['B']
+External expected model_answer: ['B']
+External expected verdict: match
+----------------------------------------------------------------------------------------
+USER PROMPT (expected result is intentionally NOT included):
+请独立求解下面的物理题，然后再验证题库已有答案。
+
+【题目】
+4. (6 分) 在雷雨云下沿坚直方向的电场强度为 $10^{4} \mathrm{~V} / \mathrm{m}$, 已知一半径为 $1 \mathrm{~mm}$ 的雨滴在此电场中不会下落, 取重力加速度大小为 $10 \mathrm{~m} / \mathrm{s}^{2}$, 水的密度为 $10^{3} \mathrm{~kg} / \mathrm{m}^{3}$. 这雨滴携带的电荷量的最小值约为（ ）
+A. $2 \times 10^{-9} \mathrm{C}$
+B. $4 \times 10^{-9} \mathrm{C}$
+C. $6 \times 10^{-9} \mathrm{C}$
+D. $8 \times 10^{-9} \mathrm{C}$
+
+
+【题库已有答案】
+["B"]
+
+【验证要求】
+1. 必须先独立完成物理推导并得到你自己的答案。
+2. 不得把“题库已有答案”作为推理前提。
+3. 得到自己的结论以后，才能把它与题库已有答案比较。
+4. model_answer 必须填写你独立求解得到的选项。
+5. verdict 只能是 match、mismatch 或 uncertain。
+6. explanation 说明你的独立计算/推理以及最后的比较结论。
+7. 只输出一个合法 JSON 对象，不要输出 Markdown 代码块，不要输出 JSON 之外的文字。
+
+输出结构只能遵循下面的字段结构；其中内容必须由你实际求解后填写：
+{
+  "model_answer": ["..."],
+  "verdict": "match | mismatch | uncertain",
+  "explanation": "..."
+}
+
+----------------------------------------------------------------------------------------
+Elapsed: 119.05s
+MODEL RESULT:
+{
+  "model_answer": [
+    "B"
+  ],
+  "verdict": "match",
+  "explanation": "雨滴静止不下落，说明竖直向上的电场力与重力平衡。设雨滴半径为 r=1mm=1×10⁻³m，水的密度为ρ=10³kg/m³，重力加速度 g=10m/s²，电场强度 E=10⁴V/m。\n\n1. 计算雨滴质量 m：\nm = ρ × V = ρ × (4/3)πr³\nm = 10³ × (4/3)π × (1×10⁻³)³ = (4/3)π × 10⁻³ kg\n\n2. 建立平衡方程：\n电场力 F_e = qE，重力 G = mg。由 F_e = G 得：\nqE = mg\nq = mg / E = ρVg / E = ρ(4/3)πr³g / E\n\n3. 代入数值计算：\nq = [10³ × (4/3)π × (10⁻³)³ × 10] / 10⁴\nq = [(4/3)π × 10⁰ × 10⁴] / 10⁴  (注意：r³=10⁻⁹, ρ=10³, g=10, E=10⁴)\n更详细的指数运算：\nm = 10³ * (4/3)π * 10⁻⁹ = (4/3)π * 10⁻⁶ kg\nG = m*g = (4/3)π * 10⁻⁶ * 10 = (4/3)π * 10⁻⁵ N\ncq = G/E = [(4/3)π * 10⁻⁵] / 10⁴\nq = (4/3)π × 10⁻⁹ ≈ 1.33 × 3.14 × 10⁻⁹ ≈ 4.2×10⁻⁹ C\n\n计算结果约为 4.2 × 10⁻⁹ C，最接近选项 B (4 × 10⁻⁹ C)。\n\n结论：我的独立计算结果与题库答案一致。"
+}
+Check model_answer == ['B']: PASS
+Check verdict == 'match': PASS
+ASSESSMENT: PASS
+
+========================================================================================
+TEST CASE: task2-verify-think-off-B
+Provided answer: ['D']
+External expected model_answer: ['B']
+External expected verdict: mismatch
+----------------------------------------------------------------------------------------
+USER PROMPT (expected result is intentionally NOT included):
+请独立求解下面的物理题，然后再验证题库已有答案。
+
+【题目】
+4. (6 分) 在雷雨云下沿坚直方向的电场强度为 $10^{4} \mathrm{~V} / \mathrm{m}$, 已知一半径为 $1 \mathrm{~mm}$ 的雨滴在此电场中不会下落, 取重力加速度大小为 $10 \mathrm{~m} / \mathrm{s}^{2}$, 水的密度为 $10^{3} \mathrm{~kg} / \mathrm{m}^{3}$. 这雨滴携带的电荷量的最小值约为（ ）
+A. $2 \times 10^{-9} \mathrm{C}$
+B. $4 \times 10^{-9} \mathrm{C}$
+C. $6 \times 10^{-9} \mathrm{C}$
+D. $8 \times 10^{-9} \mathrm{C}$
+
+
+【题库已有答案】
+["D"]
+
+【验证要求】
+1. 必须先独立完成物理推导并得到你自己的答案。
+2. 不得把“题库已有答案”作为推理前提。
+3. 得到自己的结论以后，才能把它与题库已有答案比较。
+4. model_answer 必须填写你独立求解得到的选项。
+5. verdict 只能是 match、mismatch 或 uncertain。
+6. explanation 说明你的独立计算/推理以及最后的比较结论。
+7. 只输出一个合法 JSON 对象，不要输出 Markdown 代码块，不要输出 JSON 之外的文字。
+
+输出结构只能遵循下面的字段结构；其中内容必须由你实际求解后填写：
+{
+  "model_answer": ["..."],
+  "verdict": "match | mismatch | uncertain",
+  "explanation": "..."
+}
+
+----------------------------------------------------------------------------------------
+EXCEPTION after 180.11s: RuntimeError: Question task2-verify-think-off-B: LiteLLM call failed: litellm.Timeout: Ollama_chatException - litellm.Timeout: Connection timed out after 180.0 seconds.
+ASSESSMENT: FAIL (LLM call did not return a valid JSON result)
+
+========================================================================================
+FINAL RESULT: 1/2 test cases passed
+Interpretation:
+  The clean A/B Verify experiment did NOT fully pass. Do not promote think=False Verify to the formal policy yet.
+Finished (UTC): 2026-10-07T11:10:23.550385+00:00
