@@ -21,7 +21,7 @@ from src.llm_client import (
 def test_parse_json_response_accepts_common_wrappers() -> None:
     cases = [
         ('{"funny_explanation":"hello"}', {"funny_explanation": "hello"}),
-            "```json\n{\"memory_aids\":[\"A\",\"B\"]}\n```",
+        ('```json\n{\"memory_aids\":[\"A\",\"B\"]}\n```', {"memory_aids": ["A", "B"]}),
         ('模型回答如下：\\n{"common_misconceptions":["只看B不看方向"]}\\n以上。', {"common_misconceptions": ["只看B不看方向"]}),
     ]
     for raw, expected in cases:
