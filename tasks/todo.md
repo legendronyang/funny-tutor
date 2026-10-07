@@ -26,9 +26,9 @@
 
 ### 
 
-## Task 2: 封装大模型客户端与 JSON 清洗逻辑
+## Task 2: LiteLLM 大模型客户端、JSON 清洗与 Generate/Verify 契约
 
-**Description:** 编写 llm_client.py 负责向 Gemini 发起调用，包含系统 Prompt 的加载以及防爆破 JSON 剥离解析能力。
+**Description:** 编写统一 LLM Client，通过 LiteLLM 路由模型；开发阶段默认使用 WSL Ubuntu 中的 Ollama/Qwen3.5:9b。客户端负责加载 Prompt、调用模型、稳定提取结构化 JSON，并提供 generation / verification 所需的最小接口。业务代码不得依赖具体 provider。
 
 **Acceptance criteria:**
 - [ ] 正确读取配置中的 LiteLLM model/api_base；云端 API Key 通过环境变量读取，本地 Ollama 不要求 API Key。
