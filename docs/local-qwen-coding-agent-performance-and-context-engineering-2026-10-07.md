@@ -1514,6 +1514,61 @@ Therefore the current evidence supports these separate conclusions:
 
 This correction prevents a false attribution of the ~66 s fetch failure to Gemini CLI itself when the capture proxy can independently introduce delayed response headers.
 
+## 22.1. Architecture/scope decision — 2026-10-07
+
+Based on the accumulated evidence and the practical goal of the local setup, the optimization target is intentionally narrowed.
+
+### Objective
+
+Do **not** build a second full Agent Runtime in Python merely to optimize the current CPU-only Qwen environment.
+
+Instead:
+
+~~~text
+Approved application / Agent Runtime (Gemini CLI)
+              ↓
+           LiteLLM
+              ↓
+       local Qwen when appropriate
+              ↓
+           Ollama
+~~~
+
+The local Qwen3.5:9B instance is treated primarily as a **transparent local LLM execution backend** whose purpose is to reduce cloud-token consumption while keeping the application-facing interface stable.
+
+### Practical acceptance criteria
+
+1. Application code such as funny-tutor should not need to know whether the selected backend is local Qwen or cloud Gemini.
+2. LiteLLM remains the routing abstraction and may map model names transparently.
+3. The local path only needs to provide the basic capabilities required by the application; it does not need to reproduce every capability of a large cloud model.
+4. Do not spend significant engineering effort on a custom Python Agent Runtime unless Gemini CLI/LiteLLM proves unable to satisfy a concrete application requirement.
+5. Because Gemini CLI is an approved enterprise tool, continue using it in the local-project work as a learning and integration environment rather than treating it as disposable test tooling.
+
+### Performance policy
+
+The important local metric is **cloud tokens avoided per unit of useful work**, not maximum context size or maximum raw token throughput.
+
+Therefore:
+
+- Keep Qwen warm when performing repeated local work.
+- Avoid model/runner switches during measurements.
+- Prefer compact task prompts and avoid unnecessary generic context injection.
+- Do not enlarge context merely because the model supports it.
+- Use direct downstream captures only when diagnosing a concrete protocol/runtime issue.
+
+### Current boundary
+
+The evidence currently proves that Qwen and LiteLLM can provide the underlying text and structured-tool capabilities, but the Gemini CLI-specific structured tool-execution path remains unresolved. This is now a compatibility issue to address only to the extent required for the practical local-project acceptance test.
+
+~~~text
+Priority order:
+1. Restore a clean, stable Gemini CLI → LiteLLM → Ollama environment.
+2. Verify basic application-facing functionality with local Qwen.
+3. Accumulate practical Gemini CLI experience.
+4. Optimize obvious context/token waste only when it has measurable benefit.
+5. Avoid building infrastructure that the approved Gemini CLI already provides.
+~~~
+
 ## 22. Final state
 
 The investigation has moved from broad performance debugging to a localized protocol/Agent-runtime problem.
