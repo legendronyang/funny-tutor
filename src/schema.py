@@ -23,6 +23,25 @@ class KnowledgePoint(BaseModel):
     typical_pitfalls: list[str] = Field(default_factory=list)
 
 
+class EMQuestionInput(BaseModel):
+    """Validated shape of the sparse/raw question records used as pipeline input.
+
+    The downloaded question bank intentionally contains only source fields.
+    Fields that are absent at this stage are filled or verified later by the
+    LLM pipeline; the canonical EMQuestion model remains strict.
+    """
+
+    model_config = ConfigDict(strict=True)
+
+    year: str
+    category: str
+    question: str
+    answer: list[str] = Field(default_factory=list)
+    analysis: str = ""
+    index: int
+    score: int
+
+
 class EMQuestion(BaseModel):
     """Canonical representation of one electromagnetism question."""
 
