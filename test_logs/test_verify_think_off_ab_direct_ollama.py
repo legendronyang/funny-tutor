@@ -303,7 +303,7 @@ def main() -> int:
                 continue
 
             log(f"WALL-CLOCK ELAPSED: {wall_elapsed:.3f}s")
-            log_timing(log, result)
+            log_timing(log, result, wall_elapsed)
 
             message = result.get("message")
             if isinstance(message, dict):
