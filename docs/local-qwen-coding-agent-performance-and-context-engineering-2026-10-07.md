@@ -1471,6 +1471,49 @@ Qwen function schema     preserved              not tested here
 
 This is the current strongest protocol-level finding in the session.
 
+## 21.6. Gemini CLI wire-protocol probe — interpretation correction
+
+The 2026-10-07 Gemini CLI probe produced a capture at:
+
+~~~text
+~/gemini-captures/20261007-105731-478771
+~~~
+
+with:
+
+~~~text
+status = 200
+elapsed = 66.24 s
+path = /v1beta/models/gemini-2.5-pro:streamGenerateContent?alt=sse
+~~~
+
+This establishes that Gemini CLI 0.62.0 is using the Gemini-native streaming API shape, not OpenAI /v1/chat/completions.
+
+However, the capture result must not be used as evidence that Gemini CLI successfully consumed the stream. The temporary capture proxy buffers the complete upstream response before sending response headers/body onward. Therefore a long upstream generation can produce a proxy-side 200 while Gemini CLI can still fail while waiting for or consuming the fetch. The temporary proxy is therefore unsuitable for diagnosing the precise fetch-failure root cause.
+
+The newer 2026-10-07 13:50 Gemini CLI error report:
+
+~~~text
+/tmp/gemini-client-error-Turn.run-sendMessageStream-2026-10-07T05-50-42-587Z.json
+~~~
+
+contains only the wrapper-level error:
+
+~~~text
+exception TypeError: fetch failed sending request
+~~~
+
+with no populated errno, code, syscall, address, port, or cause fields in the extracted structure.
+
+Therefore the current evidence supports these separate conclusions:
+
+1. **Protocol:** Gemini CLI 0.62.0 remains a Gemini-native client in this configuration; GOOGLE_GEMINI_BASE_URL changes the Gemini API base URL and does not select OpenAI Chat Completions. The current upstream source still constructs a Google GenAI client for gateway authentication. 
+2. **OpenAI-compatible native support:** There is no demonstrated built-in OpenAI-compatible provider switch in the current CLI configuration; upstream has an open feature request for this capability.
+3. **Fetch failure:** The exact root cause is still open. The buffered 4010 capture is not suitable for further transport diagnosis.
+4. **Next experiment:** Do not repeat broad Gemini CLI fetch testing through the buffering capture proxy. Either use a true streaming-transparent probe or test a direct Gemini-native path without 4010 while observing LiteLLM/Ollama timestamps.
+
+This correction prevents a false attribution of the ~66 s fetch failure to Gemini CLI itself when the capture proxy can independently introduce delayed response headers.
+
 ## 22. Final state
 
 The investigation has moved from broad performance debugging to a localized protocol/Agent-runtime problem.
