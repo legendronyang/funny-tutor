@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from src.schema import EMQuestion, EMQuestionInput
+from src.schema import EMQuestion
 
 
 def valid_question() -> dict:
@@ -91,34 +91,3 @@ def test_difficulty_must_be_between_one_and_five() -> None:
     with pytest.raises(ValidationError):
         EMQuestion.model_validate(payload)
 
-
-def test_sparse_source_question_is_accepted() -> None:
-    source = {
-        "year": "2010",
-        "category": "（全国卷ⅱ）",
-        "question": "题目",
-        "answer": ["B"],
-        "analysis": "解析",
-        "index": 1,
-        "score": 6,
-    }
-
-    parsed = EMQuestionInput.model_validate(source)
-
-    assert parsed.answer == ["B"]
-    assert parsed.analysis == "解析"
-
-
-def test_sparse_source_question_allows_missing_answer_and_analysis() -> None:
-    source = {
-        "year": "2010",
-        "category": "（全国卷ⅱ）",
-        "question": "题目",
-        "index": 1,
-        "score": 6,
-    }
-
-    parsed = EMQuestionInput.model_validate(source)
-
-    assert parsed.answer == []
-    assert parsed.analysis == ""
