@@ -1,0 +1,1 @@
+"""Funny Tutor source package."""
