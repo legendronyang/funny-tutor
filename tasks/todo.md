@@ -10,7 +10,7 @@
 - [ ] 校验逻辑能正确拒收缺少必填字段或类型错误的 JSON 片段。
 
 **Verification:**
-- [ ] Tests pass: pytest tests/test_schema.py -v
+- [x] Tests pass: pytest tests/test_schema.py -v (11 passed)
 - [ ] Manual check: 检查 config.toml 模板是否包含所需要的 LLM 基础配置与 Vault 路径。
 
 **Dependencies:** None
@@ -18,6 +18,7 @@
 **Files likely touched:**
 - requirements.txt
 - config.toml
+- pytest.ini
 - src/schema.py
 - tests/test_schema.py
 
