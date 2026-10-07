@@ -28,19 +28,20 @@
 
 ## Task 2: LiteLLM 大模型客户端、JSON 清洗与 Generate/Verify 契约
 
-**Description:** 编写统一 LLM Client，通过 LiteLLM 路由模型；开发阶段默认使用 WSL Ubuntu 中的 Ollama `ollama_chat/qwen3.5:9b`。Generate 默认关闭 thinking 以控制 CPU 延迟，Verify 默认开启 thinking 以保证独立求解。客户端负责加载 Prompt、调用模型、稳定提取结构化 JSON，并提供 generation / verification 所需的最小接口。业务代码不得依赖具体 provider。
+**Description:** 编写统一 LLM Client，通过 LiteLLM 路由模型；开发阶段默认使用 WSL Ubuntu 中的 Ollama `ollama_chat/qwen3.5:9b-opencode`。Generate 默认关闭 thinking 以控制 CPU 延迟，Verify 默认开启 thinking 以保证独立求解。客户端负责加载 Prompt、调用模型、稳定提取结构化 JSON，并提供 generation / verification 所需的最小接口。业务代码不得依赖具体 provider。
 
 **Acceptance criteria:**
-- [ ] 正确读取配置中的 LiteLLM model/api_base；云端 API Key 通过环境变量读取，本地 Ollama 不要求 API Key。
-- [ ] 实现针对大模型返回内容的清洗方法，能够稳定剥离外壳提取 JSON。
-- [ ] 当 JSON 解析彻底失败时，抛出包含题目 ID 的明确自定义异常。
-- [ ] generation / verification 模式契约明确：空目标字段生成；已有可信字段必须独立求解后再比较，不得把 provided answer 当作推理依据。
-- [ ] LLM provider/model 可仅通过配置切换，不修改上层业务代码。
+- [x] 正确读取配置中的 LiteLLM model/api_base；云端 API Key 通过环境变量读取，本地 Ollama 不要求 API Key。
+- [x] 实现针对大模型返回内容的清洗方法，能够稳定剥离外壳提取 JSON。
+- [x] 当 JSON 解析彻底失败时，抛出包含题目 ID 的明确自定义异常。
+- [x] generation / verification 模式契约明确：空目标字段生成；已有可信字段必须独立求解后再比较，不得把 provided answer 当作推理依据。
+- [x] LLM provider/model 可仅通过配置切换，不修改上层业务代码。
 
 **Verification:**
-- [ ] Tests pass: pytest tests/test_llm_client.py -v
-- [ ] Manual check: 确保 prompt 文本包含“绝不改写 LaTeX”“独立求解后再验证”“仅输出 JSON”等强制指令。
-- [ ] Manual integration: 使用本地 `ollama_chat/qwen3.5:9b` 完成 Generate（`think=false`）真实调用，并完成 Verify（`think=true`）真实调用；该文件仅作为开发 fixture，不作为正式题库 Schema。
+- [x] Tests: `pytest tests/test_llm_client.py -v` 已验证 15 tests；当前配置切换到 `qwen3.5:9b-opencode` 后同步更新了配置断言。当前代码快照的隔离复现测试结果为 15 passed。
+- [x] Manual check: Prompt 包含“绝不改写 LaTeX”“独立求解后再验证”“仅输出 JSON”等强制指令。
+- [x] Manual integration: 使用正式 `LLMClient -> LiteLLM -> Ollama -> qwen3.5:9b-opencode` 链路、`think_verify=true`、`timeout=1800s` 完成 A/B Verify；A=正确答案 B -> `B/match`，B=故意错误答案 D -> `B/mismatch`，2/2 PASS。正式证据见 `test_logs/test_verify_think_on_ab.log`，总耗时约 34m22s（A 14m00.821s，B 20m21.123s）。
+- [x] Runtime decision: 本地 CPU 开发阶段采用 `qwen3.5:9b-opencode`；Generate `think=false`，Verify `think=true`，`timeout=1800`。`think=false` 的 direct diagnostic 已作为探索性记录保留，但不作为正式 Verify 策略验收依据。
 
 **Dependencies:** Task 1
 
@@ -54,7 +55,6 @@
 **Estimated scope:** Medium: 4-6 files
 
 ### 
-
 ## Task 3: Markdown 卡片渲染器
 
 **Description:** 实现纯函数将 Python 字典拼接为符合 Obsidian 语法的 Markdown 文本。
