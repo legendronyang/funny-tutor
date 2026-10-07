@@ -10,7 +10,7 @@ It intentionally uses the values currently in config.toml:
     timeout = 1800
 
 Usage:
-    python test_logs/test_verify_think_on_ab.py         test_logs/test_verify_think_on_ab.log
+    python test_logs/test_verify_think_on_ab.py test_logs/test_verify_think_on_ab.log
 
 Cases:
     A: provided answer is the correct answer B -> expect model_answer B + match
