@@ -10,14 +10,21 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import shutil
 from pathlib import Path
 from typing import Any
 
-from .daily_index import build_daily_index
-from .llm_client import LLMClient, decide_field_mode, load_llm_config, load_system_prompt
-from .markdown_renderer import render_question_card
-from .schema import EMQuestion
+try:
+    from .daily_index import build_daily_index
+    from .llm_client import LLMClient, decide_field_mode, load_llm_config, load_system_prompt
+    from .markdown_renderer import render_question_card
+    from .schema import EMQuestion
+except ImportError:  # pragma: no cover - supports direct script execution
+    from daily_index import build_daily_index
+    from llm_client import LLMClient, decide_field_mode, load_llm_config, load_system_prompt
+    from markdown_renderer import render_question_card
+    from schema import EMQuestion
 
 LOGGER = logging.getLogger("funny_tutor.pipeline")
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -145,7 +152,7 @@ def generate_vault(
                 mode=mode,
             )
             asset_relative_path = Path(
-                __import__("os").path.relpath(vault_dir / "assets", target.parent)
+                os.path.relpath(vault_dir / "assets", target.parent)
             ).as_posix()
             markdown = render_question_card(
                 question,
