@@ -21,7 +21,7 @@
 - [x] Task 2: LiteLLM 大模型客户端、结构化 JSON 清洗与 Generate/Verify 契约
 
 ### Checkpoint: Foundation
-- [ ] Pydantic 模型测试通过，能正确拦截非法 JSON。
+- [x] Pydantic 模型测试通过，能正确拦截非法 JSON。
 - [x] LLM 客户端 Mock 测试通过，能成功剥离代码块外壳并解析 JSON。
 - [x] Generate/Verify 判定测试通过：字段为空时生成，已有字段时独立核实。
 
