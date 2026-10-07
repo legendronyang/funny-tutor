@@ -49,9 +49,10 @@ def test_decide_field_mode(value: object, expected: str) -> None:
 
 def test_load_llm_config_reads_local_ollama_chat_config() -> None:
     config = load_llm_config(Path("config.toml"))
-    assert config.model == "ollama_chat/qwen3.5:9b"
+    assert config.model == "ollama_chat/qwen3.5:9b-opencode"
     assert config.api_base == "http://localhost:11434"
     assert config.api_key_env is None
+    assert config.timeout == 1800
     assert config.think_generate is False
     assert config.think_verify is True
 
