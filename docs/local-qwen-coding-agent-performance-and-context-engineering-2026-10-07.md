@@ -1641,3 +1641,53 @@ docs/local-qwen-coding-agent-performance-and-context-engineering-2026-10-07.md
 ~~~
 
 Future sessions should update this file with new settled evidence, unresolved hypotheses, test conditions, and the next single highest-information-gain action rather than repeating already settled experiments.
+
+
+## 22.2. Environment restoration sanity test — 2026-10-07
+
+After restoring the forensic setup to the normal business path, the service-level checks passed:
+
+- LiteLLM is listening on `0.0.0.0:4000`.
+- systemd reports `litellm.service` active/running with `NRestarts=0`.
+- LiteLLM application startup completed and Uvicorn is serving port 4000.
+- `/health/liveliness` returns HTTP 200.
+- The temporary 4011 forensic proxy is no longer listening.
+- The production LiteLLM → Ollama `api_base` is restored to `http://127.0.0.1:11434`.
+- Gemini CLI remains pointed at the LiteLLM Gemini-native endpoint via `GOOGLE_GEMINI_BASE_URL=http://localhost:4000`.
+
+A functional OpenAI-compatible LiteLLM sanity request was then executed:
+
+~~~text
+model = local-qwen
+endpoint = http://127.0.0.1:4000/v1/chat/completions
+think = false
+stream = false
+prompt = "Say exactly: LOCAL_QWEN_RESTORED"
+wall clock = 26.24 s
+HTTP/inference response = returned successfully
+prompt_tokens = 22
+completion_tokens = 71
+total_tokens = 93
+~~~
+
+The request therefore proves:
+
+> **The restored LiteLLM :4000 → Ollama :11434 → Qwen3.5:9B inference path is functionally alive.**
+
+However, the semantic acceptance check itself did **not** pass: Qwen returned a refusal/explanation instead of the exact requested marker `LOCAL_QWEN_RESTORED`.
+
+This should be classified as a **model-response behavior issue, not an infrastructure restoration failure**. In particular:
+
+1. The HTTP request reached the inference stack and produced a valid completion.
+2. LiteLLM returned normal usage metadata.
+3. The failure is in exact-instruction adherence for this particular marker, not in routing/connectivity.
+4. The 26.24 s wall clock should not yet be interpreted as steady-state latency; `ollama ps` should be checked to determine whether a cold/changed runner was involved.
+
+For future sanity checks, prefer a neutral marker such as:
+
+~~~text
+Reply with exactly: RESTORE_OK
+~~~
+
+and verify both the returned text and the active Ollama runner context separately.
+
