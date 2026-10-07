@@ -1,0 +1,16 @@
+# Funny Tutor - local configuration template.
+# Runtime: Windows 11 WSL Ubuntu.
+# Keep credentials in environment variables or a local .env file; never commit secrets.
+
+[llm]
+provider = "gemini"
+model = "SET_ME"
+api_key_env = "GEMINI_API_KEY"
+
+[paths]
+questions_json = "data/questions_em.json"
+assets_dir = "data/assets"
+vault_dir = "vault/FunnyTutor_EM_Vault"
+
+[daily]
+count = 3
