@@ -1,6 +1,7 @@
 该项目是借助于https://github.com/addyosmani/agent-skills 和本地ollama运行的qwen3.5-9b 以及云端大模型一起开发实现的。 
 
 | source file   | status | used skill  | 
+| -------- | -------- | ---------- |
 | idea.md       | ready  | idea-refine |
 | spec.md       | ready  | spec-driven-development |
 | tasks/plan.md | ready  | planning-and-task-breakdown |
