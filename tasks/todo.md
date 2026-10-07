@@ -11,7 +11,7 @@
 
 **Verification:**
 - [x] Tests pass: pytest tests/test_schema.py -v (11 passed)
-- [ ] Manual check: 检查 config.toml 模板是否包含所需要的 LLM 基础配置与 Vault 路径。
+- [x] Manual check: config.toml 已提供 LiteLLM 路由配置，默认本地 Ollama/Qwen3.5:9b 与 Vault 路径。
 
 **Dependencies:** None
 
@@ -31,13 +31,16 @@
 **Description:** 编写 llm_client.py 负责向 Gemini 发起调用，包含系统 Prompt 的加载以及防爆破 JSON 剥离解析能力。
 
 **Acceptance criteria:**
-- [ ] 正确读取 .env 中的 API 密钥配置并发起请求。
+- [ ] 正确读取配置中的 LiteLLM model/api_base；云端 API Key 通过环境变量读取，本地 Ollama 不要求 API Key。
 - [ ] 实现针对大模型返回内容的清洗方法，能够稳定剥离外壳提取 JSON。
-- [ ] 当 JSON 解析彻底失败时，抛出包含题号的明确自定义异常。
+- [ ] 当 JSON 解析彻底失败时，抛出包含题目 ID 的明确自定义异常。
+- [ ] generation / verification 模式契约明确：空目标字段生成；已有可信字段必须独立求解后再比较，不得把 provided answer 当作推理依据。
+- [ ] LLM provider/model 可仅通过配置切换，不修改上层业务代码。
 
 **Verification:**
 - [ ] Tests pass: pytest tests/test_llm_client.py -v
-- [ ] Manual check: 确保 prompt 文本中包含了“绝不改写 LaTeX”和“仅输出 JSON”的强制指令。
+- [ ] Manual check: 确保 prompt 文本包含“绝不改写 LaTeX”“独立求解后再验证”“仅输出 JSON”等强制指令。
+- [ ] Manual integration: 使用当前 `data/questions_em.json` 的少量题目对本地 Ollama/Qwen3.5:9b 做真实调用；该文件仅作为开发 fixture，不作为正式题库 Schema。
 
 **Dependencies:** Task 1
 
@@ -45,8 +48,10 @@
 - src/llm_client.py
 - src/prompts/funny_tutor_em.txt
 - tests/test_llm_client.py
+- config.toml
+- requirements.txt
 
-**Estimated scope:** Small: 3 files
+**Estimated scope:** Medium: 4-6 files
 
 ### 
 
