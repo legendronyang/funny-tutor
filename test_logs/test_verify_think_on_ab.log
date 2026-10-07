@@ -1,0 +1,125 @@
+Funny Tutor — Task 2 formal Verify A/B test (think=True)
+Started (UTC): 2026-10-07T13:31:18.260048+00:00
+Repository root: /home/ronyang/workspace/funny-tutor
+Config: /home/ronyang/workspace/funny-tutor/config.toml
+System prompt: /home/ronyang/workspace/funny-tutor/src/prompts/funny_tutor_em.txt
+Output log: /home/ronyang/workspace/funny-tutor/test_logs/test_verify_think_on_ab.log
+
+RUNTIME CONFIGURATION:
+  model=ollama_chat/qwen3.5:9b-opencode
+  api_base=http://localhost:11434
+  timeout=1800s
+  think_generate=False
+  think_verify=True
+  litellm_version=1.104.0
+  test_override=NONE (uses config.toml as-is)
+
+TARGET QUESTION:
+  year=2010, category=（全国卷ⅱ）, index=1
+  Complete question loaded from data/questions_em.json.
+  Fixture answer (external oracle)=['B']
+
+========================================================================================
+TEST CASE: task2-verify-think-on-A
+Provided answer: ['B']
+External expected model_answer: ['B']
+External expected verdict: match
+----------------------------------------------------------------------------------------
+USER PROMPT (expected result is intentionally NOT included):
+请独立求解下面的物理题，然后再验证题库已有答案。
+
+【题目】
+4. (6 分) 在雷雨云下沿坚直方向的电场强度为 $10^{4} \mathrm{~V} / \mathrm{m}$, 已知一半径为 $1 \mathrm{~mm}$ 的雨滴在此电场中不会下落, 取重力加速度大小为 $10 \mathrm{~m} / \mathrm{s}^{2}$, 水的密度为 $10^{3} \mathrm{~kg} / \mathrm{m}^{3}$. 这雨滴携带的电荷量的最小值约为（ ）
+A. $2 \times 10^{-9} \mathrm{C}$
+B. $4 \times 10^{-9} \mathrm{C}$
+C. $6 \times 10^{-9} \mathrm{C}$
+D. $8 \times 10^{-9} \mathrm{C}$
+
+
+【题库已有答案】
+["B"]
+
+【验证要求】
+1. 必须先独立完成物理推导并得到你自己的答案。
+2. 不得把“题库已有答案”作为推理前提。
+3. 得到自己的结论以后，才能把它与题库已有答案比较。
+4. model_answer 必须填写你独立求解得到的选项。
+5. verdict 只能是 match、mismatch 或 uncertain。
+6. explanation 说明你的独立计算/推理以及最后的比较结论。
+7. 只输出一个合法 JSON 对象，不要输出 Markdown 代码块，不要输出 JSON 之外的文字。
+
+输出结构只能遵循下面的字段结构；其中内容必须由你实际求解后填写：
+{
+  "model_answer": ["..."],
+  "verdict": "match | mismatch | uncertain",
+  "explanation": "..."
+}
+
+----------------------------------------------------------------------------------------
+Elapsed: 840.821s
+PARSED MODEL RESULT:
+{
+  "model_answer": [
+    "B"
+  ],
+  "verdict": "match",
+  "explanation": "独立计算雨滴质量 m=ρ·(4/3)πr³，根据雨滴不下落可知电场力与重力平衡，即 qE=mg。由此推导电荷量 q=m g/E = ρ·(4/3)πr³g/E。代入已知数值：ρ=10³kg/m³, r=1mm=10⁻³m, g=10m/s², E=10⁴V/m。计算得 q≈(10³×4/3×3.14×10⁻⁹×10)/10⁴ ≈ 4.2×10⁻⁹C，约等于 4×10⁻⁹C，对应选项 B。计算结果与题库答案一致。"
+}
+Check model_answer == ['B']: PASS
+Check verdict == 'match': PASS
+ASSESSMENT: PASS
+
+========================================================================================
+TEST CASE: task2-verify-think-on-B
+Provided answer: ['D']
+External expected model_answer: ['B']
+External expected verdict: mismatch
+----------------------------------------------------------------------------------------
+USER PROMPT (expected result is intentionally NOT included):
+请独立求解下面的物理题，然后再验证题库已有答案。
+
+【题目】
+4. (6 分) 在雷雨云下沿坚直方向的电场强度为 $10^{4} \mathrm{~V} / \mathrm{m}$, 已知一半径为 $1 \mathrm{~mm}$ 的雨滴在此电场中不会下落, 取重力加速度大小为 $10 \mathrm{~m} / \mathrm{s}^{2}$, 水的密度为 $10^{3} \mathrm{~kg} / \mathrm{m}^{3}$. 这雨滴携带的电荷量的最小值约为（ ）
+A. $2 \times 10^{-9} \mathrm{C}$
+B. $4 \times 10^{-9} \mathrm{C}$
+C. $6 \times 10^{-9} \mathrm{C}$
+D. $8 \times 10^{-9} \mathrm{C}$
+
+
+【题库已有答案】
+["D"]
+
+【验证要求】
+1. 必须先独立完成物理推导并得到你自己的答案。
+2. 不得把“题库已有答案”作为推理前提。
+3. 得到自己的结论以后，才能把它与题库已有答案比较。
+4. model_answer 必须填写你独立求解得到的选项。
+5. verdict 只能是 match、mismatch 或 uncertain。
+6. explanation 说明你的独立计算/推理以及最后的比较结论。
+7. 只输出一个合法 JSON 对象，不要输出 Markdown 代码块，不要输出 JSON 之外的文字。
+
+输出结构只能遵循下面的字段结构；其中内容必须由你实际求解后填写：
+{
+  "model_answer": ["..."],
+  "verdict": "match | mismatch | uncertain",
+  "explanation": "..."
+}
+
+----------------------------------------------------------------------------------------
+Elapsed: 1221.123s
+PARSED MODEL RESULT:
+{
+  "model_answer": [
+    "B"
+  ],
+  "verdict": "mismatch",
+  "explanation": "独立求解过程：雨滴悬浮需满足电场力等于重力，即 qE = mg。其中 m = ρV = ρ(4/3)πr³。代入数值：ρ=10³, r=10⁻³, g=10, E=10⁴。计算得 m = 10³ × (4/3)π × 10⁻⁹ = (4/3)π × 10⁻⁶ kg。重力 G = mg ≈ (4/3)π × 10⁻⁵ N。所需电荷量 q = G/E ≈ (4/3)π × 10⁻⁹ C。取 π≈3，则 q≈4×10⁻⁹ C，与选项 B 吻合。题库答案 D (8×10⁻⁹ C) 为计算值的两倍，疑似存在系数错误或使用了直径而非半径的误算。故结论为 mismatch。"
+}
+Check model_answer == ['B']: PASS
+Check verdict == 'mismatch': PASS
+ASSESSMENT: PASS
+
+========================================================================================
+FINAL RESULT: 2/2 test cases passed
+Interpretation: formal Funny Tutor Verify path passed both correct-answer and intentionally-wrong-answer cases.
+Finished (UTC): 2026-10-07T14:05:40.211797+00:00
