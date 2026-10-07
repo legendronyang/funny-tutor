@@ -1691,3 +1691,43 @@ Reply with exactly: RESTORE_OK
 
 and verify both the returned text and the active Ollama runner context separately.
 
+
+
+## 22.3. Post-restore runner verification — 2026-10-07
+
+Immediately after the functional LiteLLM sanity request, `ollama ps` was checked twice.
+
+Observed state:
+
+~~~text
+NAME          ID              SIZE      PROCESSOR    CONTEXT    UNTIL
+qwen3.5:9b    6488c96fa5fa    6.6 GB    100% CPU     16384      4 minutes from now
+
+qwen3.5:9b    6488c96fa5fa    6.6 GB    100% CPU     16384      2 minutes from now
+~~~
+
+This confirms:
+
+1. The expected `qwen3.5:9b` model is active.
+2. The active runner is using **16384 context**, matching the intended LiteLLM local configuration.
+3. The model is running fully on CPU.
+4. The same runner/model ID remains active across both checks, so no intervening model switch was observed.
+5. The decreasing `UNTIL` value is consistent with Ollama's keep-alive countdown; it is not evidence of inference failure.
+
+Therefore the restore checkpoint is now:
+
+~~~text
+LiteLLM :4000                    PASS
+  ↓
+Ollama :11434                    PASS
+  ↓
+qwen3.5:9b                       PASS
+  ↓
+active runner context = 16384   PASS
+~~~
+
+The earlier 26.24 s sanity-request wall clock should still not be used as a warm steady-state benchmark, but the runner verification removes the major ambiguity about the active model/context configuration.
+
+**Restore status: VERIFIED.**
+
+The next work should move from infrastructure recovery to the practical acceptance test of the intended application-facing path, rather than continuing generic performance diagnosis.
