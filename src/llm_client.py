@@ -1,14 +1,16 @@
-"""LLM client contracts and response parsing for Funny Tutor.
-
-The first implementation slice keeps provider/network concerns out of the
-parsing logic so the JSON contract can be verified independently.
-"""
+"""LiteLLM-backed provider-independent client for Funny Tutor."""
 
 from __future__ import annotations
 
 import json
+import os
 import re
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Literal
+
+import litellm
+from dotenv import load_dotenv
 
 GenerationMode = Literal["generate", "verify"]
 
@@ -22,13 +24,7 @@ class LLMResponseError(ValueError):
 
 
 def decide_field_mode(value: Any) -> GenerationMode:
-    """Return whether a canonical field needs generation or verification.
-
-    Empty values are generated. Existing non-empty values are verified
-    independently by the caller; the provided value must not become the model's
-    reasoning conclusion.
-    """
-
+    """Return generate for empty values, otherwise verify."""
     if value is None:
         return "generate"
     if isinstance(value, str) and not value.strip():
@@ -45,17 +41,11 @@ def _strip_code_fence(text: str) -> str:
 
 
 def parse_json_response(raw_text: str, question_id: str) -> dict[str, Any]:
-    """Extract and parse the first JSON object from an LLM response.
-
-    Accepts plain JSON, a fenced JSON block, or brief prose surrounding a JSON
-    object. Raises LLMResponseError with the question id on failure.
-    """
-
+    """Extract and parse the first JSON object from an LLM response."""
     if not raw_text or not raw_text.strip():
         raise LLMResponseError(question_id, "LLM returned empty content")
 
     candidate = _strip_code_fence(raw_text)
-
     decoder = json.JSONDecoder()
     for match in re.finditer(r"\{", candidate):
         try:
@@ -69,3 +59,98 @@ def parse_json_response(raw_text: str, question_id: str) -> dict[str, Any]:
         question_id,
         "unable to extract a valid JSON object from LLM response",
     )
+
+
+@dataclass(frozen=True)
+class LLMConfig:
+    model: str
+    api_base: str | None = None
+    api_key_env: str | None = None
+    timeout: int = 180
+
+
+def load_llm_config(config_path: Path) -> LLMConfig:
+    """Load the [llm] section from config.toml."""
+    load_dotenv()
+    try:
+        import tomllib
+    except ModuleNotFoundError:
+        import tomli as tomllib
+
+    with config_path.open("rb") as handle:
+        raw = tomllib.load(handle)
+
+    section = raw.get("llm", {})
+    model = section.get("model")
+    if not isinstance(model, str) or not model.strip() or model == "SET_ME":
+        raise ValueError("config.toml [llm].model must be a concrete LiteLLM model")
+
+    api_base = section.get("api_base")
+    api_key_env = section.get("api_key_env")
+    return LLMConfig(
+        model=model,
+        api_base=api_base if isinstance(api_base, str) and api_base else None,
+        api_key_env=api_key_env if isinstance(api_key_env, str) and api_key_env else None,
+        timeout=int(section.get("timeout", 180)),
+    )
+
+
+def load_system_prompt(prompt_path: Path) -> str:
+    """Load and validate the Funny Tutor system prompt."""
+    prompt = prompt_path.read_text(encoding="utf-8").strip()
+    if not prompt:
+        raise ValueError(f"Prompt file is empty: {prompt_path}")
+    return prompt
+
+
+class LLMClient:
+    """Single integration point between Funny Tutor and LiteLLM."""
+
+    def __init__(self, config: LLMConfig, system_prompt: str) -> None:
+        self.config = config
+        self.system_prompt = system_prompt
+
+    def complete_json(
+        self,
+        *,
+        question_id: str,
+        user_prompt: str,
+        mode: GenerationMode,
+    ) -> dict[str, Any]:
+        """Call the configured model and return one parsed JSON object."""
+        mode_instruction = (
+            "MODE: GENERATE\nGenerate missing target fields."
+            if mode == "generate"
+            else "MODE: VERIFY\nSolve independently first; compare only after reaching your own conclusion."
+        )
+        messages = [
+            {"role": "system", "content": self.system_prompt},
+            {"role": "user", "content": f"{mode_instruction}\n\n{user_prompt}"},
+        ]
+
+        kwargs: dict[str, Any] = {
+            "model": self.config.model,
+            "messages": messages,
+            "timeout": self.config.timeout,
+        }
+        if self.config.api_base:
+            kwargs["api_base"] = self.config.api_base
+        if self.config.api_key_env:
+            api_key = os.getenv(self.config.api_key_env)
+            if not api_key:
+                raise RuntimeError(
+                    f"Environment variable {self.config.api_key_env} is not set"
+                )
+            kwargs["api_key"] = api_key
+
+        try:
+            response = litellm.completion(**kwargs)
+            raw = response.choices[0].message.content
+        except Exception as exc:
+            raise RuntimeError(
+                f"Question {question_id}: LiteLLM call failed: {exc}"
+            ) from exc
+
+        if not isinstance(raw, str):
+            raise LLMResponseError(question_id, "LLM response content is not text")
+        return parse_json_response(raw, question_id)
