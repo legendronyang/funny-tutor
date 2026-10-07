@@ -4,7 +4,7 @@
 
 1. 开发与运行环境为本地纯 Python 环境（Python 3.10+），运行在 Windows 11 的 WSL Ubuntu 中，不构建 Web 后端或数据库。
 2. 源数据 questions_em.json 在本项目边界之外通过人工或 OCR 工具准备好并确保格式合法；本项目从“读取合法 JSON”开始，不负责 OCR 或题目抓取。
-3. 项目中存在一个 llm_client.py，封装对 Google Gemini 的调用（可基于官方 API 或 CLI），API Key 等凭证通过 .env 或环境变量读取，严禁硬编码在代码或仓库中。
+3. 项目中存在一个统一的 llm_client.py，通过 LiteLLM 调用可配置的大模型。开发阶段默认使用 Windows 11 WSL Ubuntu 中运行的 Ollama/Qwen3.5:9b；后续可切换 Gemini、ChatGPT 等云端模型进行独立复核。API Key 等云端凭证通过 .env 或环境变量读取，严禁硬编码。业务层不得依赖具体 provider。
 4. MVP 只服务于电磁学（电磁感应、交流电等高二上学期内容），题量在几十道规模以内（目标是先打通端到端流程）。
 5. 呈现端仅为 Obsidian，大量使用 [[双链]] 与 > [!tip] 等 callout 语法，但不强依赖第三方插件。
 6. 单机 / 单 Vault 场景（可由一个学生或家庭共用），不考虑账号系统、多用户权限或跨设备同步（交由 Obsidian Sync 或网盘解决）。
@@ -32,6 +32,14 @@
    - 每次运行脚本时，根据题库简单随机选出 3–5 道题目，生成带双链的当日任务列表。
    - 不调用 LLM，只读取现有题卡和题库，实现“一键打开即可开始微学习”。
 
+## LLM Strategy
+
+- Funny Tutor 的正式题库是项目自身维护的 canonical knowledge base，不等同于任何外部题目来源。
+- data/questions_em.json 在当前开发阶段仅是少量历年真题 fixture，用于调试和集成验证；未来题目来源可以是 OCR、人工录入或其他外部系统，这些来源不属于当前项目边界。
+- Canonical EMQuestion 不应为了适配某一个来源而放宽。来源数据在进入正式题库前应完成映射、补全与校验。
+- 题库中的答案、官方解析、知识点等可信内容可以由多个模型独立核实。模型已有可信值时进入 verification：模型独立求解后比较，不把 provided answer 作为推理依据；值为空时进入 generation。
+- 每次模型验证应保留 model/provider、时间、验证字段、verdict 及必要的差异/证据，使本地 Qwen、Gemini、ChatGPT 等结果可横向比较，而不是互相覆盖。
+
 ## Tech Stack
 
 - 语言与运行环境
@@ -40,11 +48,10 @@
 - 核心库
   - pydantic：定义并校验题库 JSON 的 Schema（EMQuestion、KnowledgePoint 等）。
   - python-dotenv：从 .env 文件加载环境变量（如 API Key）。
-  - Gemini 客户端：
-    - 使用 llm_client.py 作为统一封装；内部可以是：
-      - 基于 google-genai 的官方 SDK，或
-      - 基于 CLI 的子进程封装。
-    - 对上层暴露统一的 Python 函数接口（不直接散落使用 CLI 或 SDK）。
+  - LiteLLM：
+    - llm_client.py 作为唯一 LLM 接入层。
+    - 默认路由 ollama/qwen3.5:9b，通过配置切换到 Gemini、ChatGPT 等模型。
+    - 对上层暴露统一的 Python 函数接口，不直接散落 provider-specific SDK/HTTP 调用。
 
 - 开发工具
   - pytest：单元测试。
@@ -84,7 +91,7 @@
 
 - data/
   - questions_em.json
-    电磁学题库真相源，符合 Pydantic 定义的 Schema。
+    当前仅为少量历年真题开发 fixture；正式题库结构由 EMQuestion 定义，来源数据可映射进入正式题库。
   - assets/
     - em_diagrams/
       电路图、波形图等图片资源，源文件存放在此。
@@ -93,7 +100,7 @@
   - schema.py
     Pydantic 模型定义，例如 KnowledgePoint、EMQuestion，约束 JSON 结构。
   - llm_client.py
-    Gemini 客户端封装，负责构造 Prompt、发起调用、提取并解析结构化 JSON。
+    LiteLLM 统一客户端，负责构造 Prompt、路由模型、发起调用、提取并解析结构化 JSON，以及 generation/verification 模式。
   - markdown_renderer.py
     纯函数模块，将 EMQuestion 与 LLM 输出组合为 Obsidian Markdown 字符串。
   - daily_index.py
@@ -188,6 +195,8 @@
 
 ### llm_client.py 的责任
 
+- 通过 LiteLLM 统一调用配置指定的 provider/model；开发阶段默认 Ollama/Qwen3.5:9b。
+- 提供 generation / verification 两种模式的明确契约：generation 生成缺失字段；verification 独立求解后比较已有可信字段。
 - 提供核心函数（示意）：
       def generate_funny_payload(question_context: dict) -> dict:
           # 输入: question_context (包含题干、解析等)
@@ -196,7 +205,7 @@
 
 - 函数内部应当：
   - 从 prompts/funny_tutor_em.txt 载入 System Prompt 与 Few-shot 示例。
-  - 通过 Gemini（API 或 CLI）发起调用。
+  - 通过 LiteLLM 发起调用，不让上层业务感知具体 provider。
   - 对返回文本执行“剥离 JSON”逻辑：
     - 能处理“纯 JSON 文本”或“被 Markdown 代码块包裹的 JSON 文本”两种情况（注意：解析时必须使用正则如 r"^" + r"```" + r"json" 或字符串方法去壳，防止被 Markdown 解析器截断）。
     - 提取第一个看起来是 JSON 对象的片段，再用 json.loads 解析。
@@ -304,7 +313,7 @@ MVP 抽题策略：简单随机且当次不重复。
 
 ## Success Criteria
 
-1. Schema 完备与验证通过：模型能够成功校验包含 10–20 题的 questions_em.json，无结构性错误。
+1. Schema 完备与验证通过：canonical EMQuestion 能校验正式题库；当前 data/questions_em.json 仅作为 fixture，可通过明确的映射/补全流程进入 canonical model。
 2. 端到端增量生成稳定：初次运行生成全量卡片和主页；新增题目后再次运行，旧题跳过调用，新题触发调用并更新主页。
 3. 资产沙盒隔离兼容：图片正确从项目源目录复制至 Vault 内，相对路径引用在 Obsidian 中正常渲染。
 4. LLM 响应解析鲁棒：无论 JSON 是否包裹了代码块语法，解析器均不抛出 JSONDecodeError。
