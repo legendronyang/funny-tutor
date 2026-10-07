@@ -3,7 +3,7 @@
 # Implementation Plan: Funny Tutor - EM Vault Generator
 
 ## Overview
-本项目旨在构建一个轻量级、可重复运行且增量友好的 Python 批处理管道。该管道以 JSON 格式的电磁学题库为真相源，通过 LiteLLM 调用可切换的大模型（开发阶段默认本地 Ollama/Qwen3.5:9b，后续可用 Gemini、ChatGPT 等云端模型独立复核）生成 Funny Tutor 风格的解析与记忆钩子，最终输出为 Obsidian 原生的 Markdown 题卡库及每日任务看板。核心在于解耦数据层、大模型处理层与呈现层，并解决 JSON 解析的容错问题以及 Obsidian 沙盒隔离导致的图片加载问题。
+本项目旨在构建一个轻量级、可重复运行且增量友好的 Python 批处理管道。该管道以 JSON 格式的电磁学题库为真相源，通过 LiteLLM 调用可切换的大模型（开发阶段默认本地 Ollama/Qwen3.5:9b-opencode，后续可用 Gemini、ChatGPT 等云端模型独立复核）生成 Funny Tutor 风格的解析与记忆钩子，最终输出为 Obsidian 原生的 Markdown 题卡库及每日任务看板。核心在于解耦数据层、大模型处理层与呈现层，并解决 JSON 解析的容错问题以及 Obsidian 沙盒隔离导致的图片加载问题。
 
 ## Architecture Decisions
 - 垂直切分与单向依赖：以底层数据定义（Pydantic Schema）为基石，纯函数层与外部依赖层互不干扰，最后由主控脚本统一调度。
@@ -18,12 +18,12 @@
 
 ### Phase 1: Foundation & API
 - [x] Task 1: 项目骨架初始化与数据模型 Schema
-- [ ] Task 2: LiteLLM 大模型客户端、结构化 JSON 清洗与 Generate/Verify 契约
+- [x] Task 2: LiteLLM 大模型客户端、结构化 JSON 清洗与 Generate/Verify 契约
 
 ### Checkpoint: Foundation
 - [ ] Pydantic 模型测试通过，能正确拦截非法 JSON。
-- [ ] LLM 客户端 Mock 测试通过，能成功剥离代码块外壳并解析 JSON。
-- [ ] Generate/Verify 判定测试通过：字段为空时生成，已有字段时独立核实。
+- [x] LLM 客户端 Mock 测试通过，能成功剥离代码块外壳并解析 JSON。
+- [x] Generate/Verify 判定测试通过：字段为空时生成，已有字段时独立核实。
 
 ### Phase 2: Pure Functions
 - [ ] Task 3: Markdown 卡片渲染器
@@ -45,7 +45,7 @@
 
 - `generation`：目标字段没有可信值时，由当前模型生成。
 - `verification`：已有答案/解析等可信值时，模型独立求解，不把 provided value 注入为结论，再与其比较并记录 verdict。
-- 模型路由由配置决定；开发阶段默认 `ollama_chat/qwen3.5:9b`；Ollama thinking policy 由 LLM Client 根据 Generate/Verify 模式映射，后续可切换云端模型进行独立复核。
+- 模型路由由配置决定；开发阶段默认 `ollama_chat/qwen3.5:9b-opencode`；Ollama thinking policy 由 LLM Client 根据 Generate/Verify 模式映射，后续可切换云端模型进行独立复核。
 - 正式题库应能保存 canonical content 与多模型 verification evidence，而不是用某一个模型的输出覆盖真相源。
 
 ## Risks and Mitigations
@@ -57,3 +57,9 @@
 
 ## Open Questions
 - 随着题量增加，简单的随机抽题是否会导致新题曝光率不足？（MVP 阶段暂不处理，后续可引入按日期权重的抽题策略）
+
+## Task 2 Closure Evidence
+
+- Runtime configuration: `qwen3.5:9b-opencode`, `think_generate=false`, `think_verify=true`, `timeout=1800s`.
+- Formal A/B integration: `test_logs/test_verify_think_on_ab.log` completed 2/2 PASS. A took 840.821s; B took 1221.123s; total elapsed 2061.952s (about 34m21.95s).
+- Exploratory `think=false` direct-Ollama logs remain in `test_logs/` as diagnostic evidence and are not the formal Verify acceptance path.
