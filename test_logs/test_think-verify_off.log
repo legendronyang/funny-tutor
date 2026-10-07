@@ -1,0 +1,293 @@
+(.venv) ronyang@SmartDoudou:~/workspace/funny-tutor$ cd ~/workspace/funny-tutor
+source .venv/bin/activate
+
+python - <<'PY'
+from dataclasses import replace
+from pathlib import Path
+
+from src.llm_client import (
+    LLMClient,
+    load_llm_config,
+    load_system_prompt,
+)
+
+# 正常读取正式配置
+config = load_llm_config(Path("config.toml"))
+
+# 只为本次实验临时关闭 Verify thinking
+test_config = replace(config, think_verify=False)
+
+prompt = load_system_prompt(Path("src/prompts/funny_tutor_em.txt"))
+client = LLMClient(test_config, prompt)
+
+result = client.complete_json(
+    question_id="task2-verify-001",
+    user_prompt="""
+请独立求解下面的问题，然后再验证题库已有答案。
+
+题目：
+2010 年全国卷 II 高中物理题：
+一个半径为 1 mm 的雨滴，在竖直方向电场强度为 10^4 V/m 的雷雨云下不会下落。
+已知 g=10 m/s²，水的密度为 10^3 kg/m³。
+求雨滴携带的最小电荷量。
+
+题库已有答案：
+["B"]
+
+重要要求：
+1. 必须先独立求解。
+2. 不得把 B 作为推理前提。
+3. 得到自己的结论以后，再和题库答案比较。
+4. 输出：
+{
+  "model_answer": ["..."],
+  "verdict": "match 或 mismatch 或 uncertain",
+  "explanation": "..."
+}
+5. 只输出 JSON。
+""",
+    mode="verify",
+)
+
+print("MODEL:", test_config.model)
+print("CONFIG THINK_VERIFY:", config.think_verify)
+print("TEST THINK_VERIFY:", test_config.think_verify)
+print("RESULT:", result)
+PY
+
+Give Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+Traceback (most recent call last):
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+        pool_request.request
+    )
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/httpcore/_sync/connection.py", line 103, in handle_request
+    return self._connection.handle_request(request)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/httpcore/_sync/http11.py", line 136, in handle_request
+    raise exc
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/httpcore/_sync/http11.py", line 106, in handle_request
+    ) = self._receive_response_headers(**kwargs)
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/httpcore/_sync/http11.py", line 177, in _receive_response_headers
+    event = self._receive_event(timeout=timeout)
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/httpcore/_sync/http11.py", line 217, in _receive_event
+    data = self._network_stream.read(
+        self.READ_NUM_BYTES, timeout=timeout
+    )
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/httpcore/_backends/sync.py", line 126, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout: timed out
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/litellm/llms/custom_httpx/http_handler.py", line 1511, in post
+    response: Final = self.client.send(req, stream=stream)
+                      ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+        request,
+    ...<2 lines>...
+        history=[],
+    )
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+        request,
+        follow_redirects=follow_redirects,
+        history=history,
+    )
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout: timed out
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/litellm/llms/custom_httpx/llm_http_handler.py", line 486, in _make_common_sync_call
+    response = sync_httpx_client.post(
+        url=api_base,
+    ...<4 lines>...
+        logging_obj=logging_obj,
+    )
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/litellm/llms/custom_httpx/http_handler.py", line 1517, in post
+    raise litellm.Timeout(
+    ...<3 lines>...
+    )
+litellm.exceptions.Timeout: litellm.Timeout: Connection timed out after 180.0 seconds.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/litellm/main.py", line 5994, in completion
+    response = _complete_ollama_chat(_dispatch_ctx)
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/litellm/main.py", line 4488, in _complete_ollama_chat
+    return base_llm_http_handler.completion(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        model=model,
+        ^^^^^^^^^^^^
+    ...<14 lines>...
+        client=client,
+        ^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/litellm/llms/custom_httpx/llm_http_handler.py", line 817, in completion
+    response: Final = self._make_common_sync_call(
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sync_httpx_client=sync_httpx_client,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<7 lines>...
+        logging_obj=logging_obj,
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/litellm/llms/custom_httpx/llm_http_handler.py", line 505, in _make_common_sync_call
+    raise self._handle_error(e=e, provider_config=provider_config)
+          ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/litellm/llms/custom_httpx/llm_http_handler.py", line 5943, in _handle_error
+    raise provider_error
+litellm.llms.ollama.common_utils.OllamaError: litellm.Timeout: Connection timed out after 180.0 seconds.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ronyang/workspace/funny-tutor/src/llm_client.py", line 164, in complete_json
+    response = litellm.completion(**kwargs)
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/litellm/chat_completions/dispatch.py", line 103, in completion
+    return _DISPATCH.run(
+           ~~~~~~~~~~~~~^
+        args,
+        ^^^^^
+    ...<3 lines>...
+        native=call_hook,
+        ^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/litellm/rust_bridge/dispatch.py", line 81, in run
+    return python(*args, **kwargs)
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/litellm/utils.py", line 1951, in wrapper
+    raise e
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/litellm/utils.py", line 1792, in wrapper
+    result = original_function(*args, **kwargs)
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/litellm/main.py", line 6038, in completion
+    raise exception_type(
+          ~~~~~~~~~~~~~~^
+        model=model,
+        ^^^^^^^^^^^^
+    ...<3 lines>...
+        extra_kwargs=kwargs,
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/litellm/litellm_core_utils/exception_mapping_utils.py", line 2714, in exception_type
+    raise e
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/litellm/litellm_core_utils/exception_mapping_utils.py", line 2664, in exception_type
+    _map_exception_by_status(
+    ~~~~~~~~~~~~~~~~~~~~~~~~^
+        model=model,
+        ^^^^^^^^^^^^
+    ...<4 lines>...
+        extra_information=extra_information,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/ronyang/workspace/funny-tutor/.venv/lib/python3.14/site-packages/litellm/litellm_core_utils/exception_mapping_utils.py", line 2284, in _map_exception_by_status
+    raise Timeout(
+    ...<4 lines>...
+    )
+litellm.exceptions.Timeout: litellm.Timeout: Ollama_chatException - litellm.Timeout: Connection timed out after 180.0 seconds.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<stdin>", line 19, in <module>
+  File "/home/ronyang/workspace/funny-tutor/src/llm_client.py", line 167, in complete_json
+    raise RuntimeError(
+        f"Question {question_id}: LiteLLM call failed: {exc}"
+    ) from exc
+RuntimeError: Question task2-verify-001: LiteLLM call failed: litellm.Timeout: Ollama_chatException - litellm.Timeout: Connection timed out after 180.0 seconds.
+
+(.venv) ronyang@SmartDoudou:~/workspace/funny-tutor$ python - <<'PY'
+from dataclasses import replace
+from pathlib import Path
+
+from src.llm_client import (
+    LLMClient,
+    load_llm_config,
+    load_system_prompt,
+)
+
+config = load_llm_config(Path("config.toml"))
+# 只为本次实验临时关闭 Verify thinking
+test_config = replace(config, think_verify=False)
+
+prompt = load_system_prompt(Path("src/prompts/funny_tutor_em.txt"))
+client = LLMClient(test_config, prompt)
+
+result = client.complete_json(
+    question_id="task2-verify-002",
+    user_prompt="""
+请独立求解下面的问题，然后再验证题库已有答案。
+
+题目：
+一个半径为 1 mm 的雨滴，在竖直方向电场强度为 10^4 V/m 的雷雨云下不会下落。
+已知 g=10 m/s²，水的密度为 10^3 kg/m³。
+求雨滴携带的最小电荷量。
+
+题库已有答案：
+["D"]
+
+重要要求：
+1. 必须先独立求解。
+2. 不得把 D 作为推理前提。
+3. 得到自己的结论以后，再和题库答案比较。
+4. 输出：
+{
+  "model_answer": ["..."],
+  "verdict": "match 或 mismatch 或 uncertain",
+  "explanation": "..."
+}
+5. 只输出 JSON。
+""",
+    mode="verify",
+)
+
+print("MODEL:", config.model)
+print("THINK_VERIFY:", config.think_verify)
+print("RESULT:", result)
+PY
+Traceback (most recent call last):
+  File "<stdin>", line 17, in <module>
+  File "/home/ronyang/workspace/funny-tutor/src/llm_client.py", line 173, in complete_json
+    return parse_json_response(raw, question_id)
+  File "/home/ronyang/workspace/funny-tutor/src/llm_client.py", line 58, in parse_json_response
+    raise LLMResponseError(
+    ...<2 lines>...
+    )
+src.llm_client.LLMResponseError: Question task2-verify-002: unable to extract a valid JSON object from LLM response
+(.venv) ronyang@SmartDoudou:~/workspace/funny-tutor$
+
