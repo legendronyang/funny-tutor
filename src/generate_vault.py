@@ -144,12 +144,13 @@ def generate_vault(
                 user_prompt=_question_prompt(question),
                 mode=mode,
             )
+            asset_relative_path = Path(
+                __import__("os").path.relpath(vault_dir / "assets", target.parent)
+            ).as_posix()
             markdown = render_question_card(
                 question,
                 _merge_payload(question, payload),
-                asset_relative_path=str(
-                    Path("../../assets").as_posix()
-                ),
+                asset_relative_path=asset_relative_path,
             )
             target.write_text(markdown, encoding="utf-8")
             generated += 1
