@@ -3,11 +3,16 @@
 # Keep credentials in environment variables or a local .env file; never commit secrets.
 
 [llm]
-# LiteLLM model string. Change only this setting to switch providers/models.
-# Development default: local WSL Ollama.
-model = "ollama/qwen3.5:9b"
+# LiteLLM chat model string. Change only this setting to switch providers/models.
+# Development default: local WSL Ollama chat endpoint.
+model = "ollama_chat/qwen3.5:9b"
 api_base = "http://localhost:11434"
 api_key_env = ""
+
+# Ollama/Qwen thinking policy. Generate optimizes for throughput; Verify
+# preserves explicit reasoning so the model can solve independently first.
+think_generate = false
+think_verify = true
 
 [paths]
 questions_json = "data/questions_em.json"

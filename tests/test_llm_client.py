@@ -21,7 +21,7 @@ from src.llm_client import (
 def test_parse_json_response_accepts_common_wrappers() -> None:
     cases = [
         ('{"funny_explanation":"hello"}', {"funny_explanation": "hello"}),
-        ("```json\n{\"memory_aids\":[\"A\",\"B\"]}\n```", {"memory_aids": ["A", "B"]}),
+        ("\`\`\`json\\n{\\"memory_aids\\":[\\"A\\",\\"B\\"]}\\n\`\`\`", {"memory_aids": ["A", "B"]}),
         ('模型回答如下：\\n{"common_misconceptions":["只看B不看方向"]}\\n以上。', {"common_misconceptions": ["只看B不看方向"]}),
     ]
     for raw, expected in cases:
@@ -47,11 +47,13 @@ def test_decide_field_mode(value: object, expected: str) -> None:
     assert decide_field_mode(value) == expected
 
 
-def test_load_llm_config_reads_local_ollama_config() -> None:
+def test_load_llm_config_reads_local_ollama_chat_config() -> None:
     config = load_llm_config(Path("config.toml"))
-    assert config.model == "ollama/qwen3.5:9b"
+    assert config.model == "ollama_chat/qwen3.5:9b"
     assert config.api_base == "http://localhost:11434"
     assert config.api_key_env is None
+    assert config.think_generate is False
+    assert config.think_verify is True
 
 
 def test_load_system_prompt_contains_hard_constraints() -> None:
@@ -61,7 +63,61 @@ def test_load_system_prompt_contains_hard_constraints() -> None:
     assert "一个合法 JSON 对象" in prompt
 
 
-def test_complete_json_uses_configured_litellm(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_complete_json_uses_ollama_thinking_policy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured_calls: list[dict] = []
+
+    def fake_completion(**kwargs):
+        captured_calls.append(kwargs)
+        return SimpleNamespace(
+            choices=[SimpleNamespace(
+                message=SimpleNamespace(content='{"ok":true}')
+            )]
+        )
+
+    import src.llm_client as module
+    monkeypatch.setattr(module.litellm, "completion", fake_completion)
+
+    client = LLMClient(
+        LLMConfig(
+            model="ollama_chat/qwen3.5:9b",
+            api_base="http://localhost:11434",
+            think_generate=False,
+            think_verify=True,
+        ),
+        "SYSTEM",
+    )
+
+    result_generate = client.complete_json(
+        question_id="em-generate",
+        user_prompt="Generate missing fields.",
+        mode="generate",
+    )
+    result_verify = client.complete_json(
+        question_id="em-verify",
+        user_prompt="Verify independently.",
+        mode="verify",
+    )
+
+    assert result_generate == {"ok": True}
+    assert result_verify == {"ok": True}
+    assert len(captured_calls) == 2
+
+    generate_call, verify_call = captured_calls
+    assert generate_call["model"] == "ollama_chat/qwen3.5:9b"
+    assert generate_call["api_base"] == "http://localhost:11434"
+    assert generate_call["think"] is False
+    assert verify_call["think"] is True
+    assert generate_call["messages"][0]["role"] == "system"
+    assert "MODE: GENERATE" in generate_call["messages"][1]["content"]
+    assert "MODE: VERIFY" in verify_call["messages"][1]["content"]
+    assert "provided answer as a reasoning premise" in verify_call["messages"][1]["content"]
+
+
+def test_non_ollama_model_does_not_receive_ollama_think_kwarg(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     captured: dict = {}
 
     def fake_completion(**kwargs):
@@ -76,17 +132,15 @@ def test_complete_json_uses_configured_litellm(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(module.litellm, "completion", fake_completion)
 
     client = LLMClient(
-        LLMConfig(model="ollama/qwen3.5:9b", api_base="http://localhost:11434"),
+        LLMConfig(model="gemini/gemini-2.5-pro"),
         "SYSTEM",
     )
     result = client.complete_json(
-        question_id="em-001",
+        question_id="cloud-001",
         user_prompt="Do the task.",
         mode="verify",
     )
 
     assert result == {"ok": True}
-    assert captured["model"] == "ollama/qwen3.5:9b"
-    assert captured["api_base"] == "http://localhost:11434"
-    assert captured["messages"][0]["role"] == "system"
-    assert "MODE: VERIFY" in captured["messages"][1]["content"]
+    assert captured["model"] == "gemini/gemini-2.5-pro"
+    assert "think" not in captured

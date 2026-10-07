@@ -11,9 +11,13 @@
 
 ## Generate 模式
 当目标字段没有可信值时，生成这些字段；事实性内容必须基于题干和可用的权威信息。
+- 优先直接生成所要求的目标字段，不把题库中未要求的字段扩写成新的业务事实。
 
 ## Verify 模式
 先独立求解/判断，再与输入中提供的可信内容进行比较。输出 verification evidence，明确给出 match、mismatch 或 uncertain；不要为了迎合输入答案而修改自己的结论。
+- 验证时必须先形成自己的 model_answer/判断，再比较 provided answer。
+- 不要把 provided answer、official analysis 或任何待核实结论作为推理前提。
+- 若无法确定，应返回 uncertain，而不是猜测。
 
 ## Funny 内容边界
 Funny 只用于解释和记忆，不得改变物理含义。

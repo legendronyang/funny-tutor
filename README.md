@@ -10,7 +10,7 @@
 
 ## LLM architecture
 
-Funny Tutor 通过统一 LLM Client + LiteLLM 路由模型。开发阶段默认使用 WSL Ubuntu 中 Ollama 运行的 Qwen3.5:9b；完成本地调试后，可以切换 Gemini、ChatGPT 等云端模型，对题库内容进行独立验证。
+Funny Tutor 通过统一 LLM Client + LiteLLM 路由模型。开发阶段默认使用 WSL Ubuntu 中 Ollama 的 `ollama_chat/qwen3.5:9b`；Generate 默认 `think=false`，Verify 默认 `think=true`；完成本地调试后，可以切换 Gemini、ChatGPT 等云端模型，对题库内容进行独立验证。
 
 题库中的字段采用“缺失则生成、已有则独立核实”的策略。多个模型的验证结果应作为独立 evidence 保存，而不是让后调用的模型覆盖前一个模型的结果。
 

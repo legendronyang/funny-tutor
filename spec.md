@@ -4,7 +4,7 @@
 
 1. 开发与运行环境为本地纯 Python 环境（Python 3.10+），运行在 Windows 11 的 WSL Ubuntu 中，不构建 Web 后端或数据库。
 2. 源数据 questions_em.json 在本项目边界之外通过人工或 OCR 工具准备好并确保格式合法；本项目从“读取合法 JSON”开始，不负责 OCR 或题目抓取。
-3. 项目中存在一个统一的 llm_client.py，通过 LiteLLM 调用可配置的大模型。开发阶段默认使用 Windows 11 WSL Ubuntu 中运行的 Ollama/Qwen3.5:9b；后续可切换 Gemini、ChatGPT 等云端模型进行独立复核。API Key 等云端凭证通过 .env 或环境变量读取，严禁硬编码。业务层不得依赖具体 provider。
+3. 项目中存在一个统一的 llm_client.py，通过 LiteLLM 调用可配置的大模型。开发阶段默认使用 Windows 11 WSL Ubuntu 中运行的 Ollama/Qwen3.5:9b；通过 LiteLLM `ollama_chat` 调用；后续可切换 Gemini、ChatGPT 等云端模型进行独立复核。API Key 等云端凭证通过 .env 或环境变量读取，严禁硬编码。业务层不得依赖具体 provider。
 4. MVP 只服务于电磁学（电磁感应、交流电等高二上学期内容），题量在几十道规模以内（目标是先打通端到端流程）。
 5. 呈现端仅为 Obsidian，大量使用 [[双链]] 与 > [!tip] 等 callout 语法，但不强依赖第三方插件。
 6. 单机 / 单 Vault 场景（可由一个学生或家庭共用），不考虑账号系统、多用户权限或跨设备同步（交由 Obsidian Sync 或网盘解决）。
@@ -50,7 +50,7 @@
   - python-dotenv：从 .env 文件加载环境变量（如 API Key）。
   - LiteLLM：
     - llm_client.py 作为唯一 LLM 接入层。
-    - 默认路由 ollama/qwen3.5:9b，通过配置切换到 Gemini、ChatGPT 等模型。
+    - 默认路由 `ollama_chat/qwen3.5:9b`，通过配置切换到 Gemini、ChatGPT 等模型。Generate 默认关闭 thinking 以优化本地 CPU 吞吐，Verify 默认开启 thinking 以支持独立求解；该 provider-specific 参数映射只存在于 llm_client.py。
     - 对上层暴露统一的 Python 函数接口，不直接散落 provider-specific SDK/HTTP 调用。
 
 - 开发工具
@@ -195,7 +195,7 @@
 
 ### llm_client.py 的责任
 
-- 通过 LiteLLM 统一调用配置指定的 provider/model；开发阶段默认 Ollama/Qwen3.5:9b。
+- 通过 LiteLLM 统一调用配置指定的 provider/model；开发阶段默认 Ollama/Qwen3.5:9b，通过 LiteLLM `ollama_chat` 调用。
 - 提供 generation / verification 两种模式的明确契约：generation 生成缺失字段；verification 独立求解后比较已有可信字段。
 - 提供核心函数（示意）：
       def generate_funny_payload(question_context: dict) -> dict:

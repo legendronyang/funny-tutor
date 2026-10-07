@@ -36,7 +36,7 @@ def decide_field_mode(value: Any) -> GenerationMode:
 
 def _strip_code_fence(text: str) -> str:
     text = text.strip()
-    fenced = re.fullmatch(r"```(?:json)?\s*(.*?)\s*```", text, flags=re.DOTALL)
+    fenced = re.fullmatch(r"\`\`\`(?:json)?\s*(.*?)\s*\`\`\`", text, flags=re.DOTALL)
     return fenced.group(1).strip() if fenced else text
 
 
@@ -67,6 +67,8 @@ class LLMConfig:
     api_base: str | None = None
     api_key_env: str | None = None
     timeout: int = 180
+    think_generate: bool = False
+    think_verify: bool = True
 
 
 def load_llm_config(config_path: Path) -> LLMConfig:
@@ -92,6 +94,8 @@ def load_llm_config(config_path: Path) -> LLMConfig:
         api_base=api_base if isinstance(api_base, str) and api_base else None,
         api_key_env=api_key_env if isinstance(api_key_env, str) and api_key_env else None,
         timeout=int(section.get("timeout", 180)),
+        think_generate=bool(section.get("think_generate", False)),
+        think_verify=bool(section.get("think_verify", True)),
     )
 
 
@@ -110,6 +114,9 @@ class LLMClient:
         self.config = config
         self.system_prompt = system_prompt
 
+    def _thinking_for_mode(self, mode: GenerationMode) -> bool:
+        return self.config.think_generate if mode == "generate" else self.config.think_verify
+
     def complete_json(
         self,
         *,
@@ -121,7 +128,11 @@ class LLMClient:
         mode_instruction = (
             "MODE: GENERATE\nGenerate missing target fields."
             if mode == "generate"
-            else "MODE: VERIFY\nSolve independently first; compare only after reaching your own conclusion."
+            else (
+                "MODE: VERIFY\n"
+                "Solve independently first; compare only after reaching your own conclusion. "
+                "Do not use the provided answer as a reasoning premise."
+            )
         )
         messages = [
             {"role": "system", "content": self.system_prompt},
@@ -142,6 +153,12 @@ class LLMClient:
                     f"Environment variable {self.config.api_key_env} is not set"
                 )
             kwargs["api_key"] = api_key
+
+        # Ollama's chat endpoint exposes Qwen thinking as the 'think' parameter.
+        # Keep this provider-specific mapping inside the client so upper layers
+        # remain provider-agnostic. Cloud providers do not receive this kwarg.
+        if self.config.model.startswith("ollama_chat/"):
+            kwargs["think"] = self._thinking_for_mode(mode)
 
         try:
             response = litellm.completion(**kwargs)

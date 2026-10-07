@@ -45,7 +45,7 @@
 
 - `generation`：目标字段没有可信值时，由当前模型生成。
 - `verification`：已有答案/解析等可信值时，模型独立求解，不把 provided value 注入为结论，再与其比较并记录 verdict。
-- 模型路由由配置决定；开发阶段默认 `ollama/qwen3.5:9b`，后续可切换云端模型进行独立复核。
+- 模型路由由配置决定；开发阶段默认 `ollama_chat/qwen3.5:9b`；Ollama thinking policy 由 LLM Client 根据 Generate/Verify 模式映射，后续可切换云端模型进行独立复核。
 - 正式题库应能保存 canonical content 与多模型 verification evidence，而不是用某一个模型的输出覆盖真相源。
 
 ## Risks and Mitigations

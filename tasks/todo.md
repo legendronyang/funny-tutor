@@ -28,7 +28,7 @@
 
 ## Task 2: LiteLLM 大模型客户端、JSON 清洗与 Generate/Verify 契约
 
-**Description:** 编写统一 LLM Client，通过 LiteLLM 路由模型；开发阶段默认使用 WSL Ubuntu 中的 Ollama/Qwen3.5:9b。客户端负责加载 Prompt、调用模型、稳定提取结构化 JSON，并提供 generation / verification 所需的最小接口。业务代码不得依赖具体 provider。
+**Description:** 编写统一 LLM Client，通过 LiteLLM 路由模型；开发阶段默认使用 WSL Ubuntu 中的 Ollama `ollama_chat/qwen3.5:9b`。Generate 默认关闭 thinking 以控制 CPU 延迟，Verify 默认开启 thinking 以保证独立求解。客户端负责加载 Prompt、调用模型、稳定提取结构化 JSON，并提供 generation / verification 所需的最小接口。业务代码不得依赖具体 provider。
 
 **Acceptance criteria:**
 - [ ] 正确读取配置中的 LiteLLM model/api_base；云端 API Key 通过环境变量读取，本地 Ollama 不要求 API Key。
@@ -40,7 +40,7 @@
 **Verification:**
 - [ ] Tests pass: pytest tests/test_llm_client.py -v
 - [ ] Manual check: 确保 prompt 文本包含“绝不改写 LaTeX”“独立求解后再验证”“仅输出 JSON”等强制指令。
-- [ ] Manual integration: 使用当前 `data/questions_em.json` 的少量题目对本地 Ollama/Qwen3.5:9b 做真实调用；该文件仅作为开发 fixture，不作为正式题库 Schema。
+- [ ] Manual integration: 使用本地 `ollama_chat/qwen3.5:9b` 完成 Generate（`think=false`）真实调用，并完成 Verify（`think=true`）真实调用；该文件仅作为开发 fixture，不作为正式题库 Schema。
 
 **Dependencies:** Task 1
 
