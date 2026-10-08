@@ -100,7 +100,10 @@ def generate_vault(
     dry_run: bool = False,
 ) -> dict[str, int]:
     """Build the Vault and return counters for processed/skipped/failed cards."""
-    import tomllib
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # Python 3.10 compatibility
+        import tomli as tomllib
 
     config = tomllib.loads(config_path.read_text(encoding="utf-8"))
     paths = config.get("paths", {})
