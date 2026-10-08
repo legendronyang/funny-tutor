@@ -69,11 +69,18 @@ def test_complete_json_uses_ollama_thinking_policy(
 ) -> None:
     captured_calls: list[dict] = []
 
+    responses = [
+        '{"funny_explanation":"这题先看关系式。","memory_aids":["先看公式。"],"common_misconceptions":["别把电场强度和电荷量正相关。"]}',
+        '{"ok":true}',
+    ]
+
     def fake_completion(**kwargs):
         captured_calls.append(kwargs)
         return SimpleNamespace(
             choices=[SimpleNamespace(
-                message=SimpleNamespace(content='{"ok":true}')
+                message=SimpleNamespace(
+                    content=responses[len(captured_calls) - 1]
+                )
             )]
         )
 
@@ -101,7 +108,11 @@ def test_complete_json_uses_ollama_thinking_policy(
         mode="verify",
     )
 
-    assert result_generate == {"ok": True}
+    assert result_generate == {
+        "funny_explanation": "这题先看关系式。",
+        "memory_aids": ["先看公式。"],
+        "common_misconceptions": ["别把电场强度和电荷量正相关。"],
+    }
     assert result_verify == {"ok": True}
     assert len(captured_calls) == 2
 
@@ -145,3 +156,34 @@ def test_non_ollama_model_does_not_receive_ollama_think_kwarg(
     assert result == {"ok": True}
     assert captured["model"] == "gemini/gemini-2.5-pro"
     assert "think" not in captured
+
+
+def test_complete_json_rejects_invalid_generate_payload(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_completion(**kwargs):
+        return SimpleNamespace(
+            choices=[SimpleNamespace(
+                message=SimpleNamespace(
+                    content='{"knowledge_main":{"name":"不允许"}}'
+                )
+            )]
+        )
+
+    import src.llm_client as module
+    monkeypatch.setattr(module.litellm, "completion", fake_completion)
+
+    client = LLMClient(
+        LLMConfig(model="ollama_chat/qwen3.5:9b-opencode"),
+        "SYSTEM",
+    )
+
+    with pytest.raises(
+        LLMResponseError,
+        match="em-invalid.*invalid Generate payload",
+    ):
+        client.complete_json(
+            question_id="em-invalid",
+            user_prompt="Generate Funny Tutor fields.",
+            mode="generate",
+        )
