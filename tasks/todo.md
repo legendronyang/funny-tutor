@@ -164,3 +164,8 @@ Task 5 的主管道在导入模块时已可正常启动，但执行 Dry-run 时�
 - `data/questions_em_canonical.json`（运行时生成，不要求提交生成数据）
 
 **Estimated scope：** Medium: 3-4 files
+
+
+### Task 7 Scope Clarification
+
+本任务只处理 Generate 模式的业务输出契约，不改变 Task 2 已通过的 Verify A/B 实验结论。Generate 的成功定义从“能解析 JSON object”升级为“JSON object 通过 FunnyTutorPayload 严格校验”。
