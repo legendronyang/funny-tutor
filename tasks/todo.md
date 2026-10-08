@@ -11,7 +11,7 @@
 
 **Verification:**
 - [x] Tests pass: pytest tests/test_schema.py -v (11 passed)
-- [x] Manual check: config.toml 已提供 LiteLLM 路由配置，默认本地 Ollama/Qwen3.5:9b 与 Vault 路径。
+- [x] Manual check: config.toml 已提供 LiteLLM 路由配置，默认本地 Ollama/Qwen3.5:9b-opencode 与 Vault 路径。
 
 **Dependencies:** None
 
@@ -139,7 +139,7 @@ Task 5 的主管道在导入模块时已可正常启动，但执行 Dry-run 时�
 
 新增 `src/import_questions.py`，将现有 OCR/历史格式题库转换为 `EMQuestion` 标准结构。为题目生成确定性 ID，映射来源字段，保留原始题干、答案和官方解析，输出前使用 Pydantic 完整校验并检查 ID 唯一性。缺少的知识点、难度和题型信息明确标记为待人工确认。更新 `config.toml`，让 Vault Generator 读取转换后的 `data/questions_em_canonical.json`，而不是直接读取旧格式来源文件。
 
-**Acceptance criteria：
+**Acceptance criteria：**
 
 - [x] 原始 `data/questions_em.json` 不被覆盖或修改。
 - [x] 转换脚本能把当前旧格式题库转换成标准 `EMQuestion` JSON。
