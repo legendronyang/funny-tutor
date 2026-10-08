@@ -188,11 +188,13 @@ Generate 模式必须输出 FunnyTutorPayload；LLM Client 和 Vault 写入边�
 - [ ] 自动化测试覆盖缺字段、额外字段、错误嵌套类型、非法 Generate response 不写卡。
 - [ ] ruff check src tests 和 pytest tests/ -v 通过。
 - [ ] 真实 Qwen 单题 Smoke Test 返回严格合法的 Generate payload，并生成包含 Funny Tutor callout 的 Markdown 卡片。
+- [ ] 首卡通过内容 Quality Gate：不臆断题干未给出的方向/符号；核心关系表述严谨；单位、幂次和数量级陷阱经过检查；易错点具体且与本题相关。
 
 **Verification：**
 - [ ] 本地执行 pytest tests/ -v。
 - [ ] 本地执行 ruff check src tests。
 - [ ] 重新执行一题 Smoke Test，确认错误模型响应被明确拒绝；符合契约时生成 [!tip] Funny Tutor 和 [!warning] 翻车点。
+- [ ] 检查首卡内容：不得将电场力直接称为“向上推力”；应明确悬浮条件下电场力与重力方向相反、大小相等，并在只求电荷量大小时使用 \`|q|E = mg\`；易错点应覆盖 \`1 mm = 10^-3 m\` 与半径三次方关系。以上不满足时不得进入 10 题批量生成。
 - [ ] 确认原始 data/questions_em.json 仍未变化。
 - [ ] 完成以上验证后，才进入 10 题全量 Generate。
 
