@@ -37,8 +37,16 @@
 
 ### Phase 3: Pipeline Integration
 - [ ] Task 5: 主管道脚本、资产同步与 IO 写出
-- [ ] Task 6: 旧题库导入适配器与 Canonical Schema 转换
+- [x] Task 6: 旧题库导入适配器与 Canonical Schema 转换
 - [ ] Task 7: LLM Generate 输出契约强化与真实 Smoke Test
+
+### Task 7: LLM Generate 输出契约强化
+
+- 真实 Smoke Test 暴露了合法 JSON 与业务 payload 不一致的问题。
+- Generate 使用 FunnyTutorPayload 严格校验，禁止额外 canonical 字段和错误嵌套类型。
+- generate_vault.py 在持久化前再次校验并采用 payload 字段白名单。
+- Prompt 与 Spec 同步定义三个允许输出键。
+- 本任务的最终验收必须包含一次真实 Qwen 单题 Smoke Test；通过后才允许进入 10 题全量生成。
 
 ### Checkpoint: Complete
 - [ ] 增量生成逻辑生效，二次运行无多余 LLM 请求。
