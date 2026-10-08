@@ -77,9 +77,7 @@ def _question_prompt(question: EMQuestion) -> str:
         "Create the Funny Tutor payload for this canonical question. "
         "Return only the JSON object with keys funny_explanation, memory_aids, "
         "common_misconceptions. Preserve all formulas and physical symbols exactly "
-        "as supplied; do not solve or rewrite the official quantitative analysis.
-
-"
+        "as supplied; do not solve or rewrite the official quantitative analysis.\n\n"
         + json.dumps(context, ensure_ascii=False, indent=2)
     )
 
