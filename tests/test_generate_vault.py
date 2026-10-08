@@ -169,7 +169,11 @@ def test_llm_failure_skips_one_question_and_continues(
 
     fake_client.complete_json.side_effect = [
         RuntimeError("bad JSON"),
-        {"funny_explanation": "ok"},
+        {
+            "funny_explanation": "ok",
+            "memory_aids": ["先找受力关系。"],
+            "common_misconceptions": ["忽略方向判断。"],
+        },
     ]
 
     stats = generate_vault(config_path=config)
@@ -194,3 +198,24 @@ def test_dry_run_validates_without_llm_or_writes(
     assert stats == {"total": 1, "generated": 0, "skipped": 0, "failed": 0}
     assert not vault.exists()
     fake_client.complete_json.assert_not_called()
+
+
+def test_invalid_generate_payload_is_not_written(
+    tmp_path: Path,
+    fake_client: Mock,
+) -> None:
+    questions = [canonical_question("q1", ["磁与电磁感应", "电磁感应"])]
+    questions_path = write_fixture(tmp_path, questions)
+    vault = tmp_path / "vault"
+    config = write_config(tmp_path, questions_path, tmp_path / "assets", vault)
+
+    fake_client.complete_json.return_value = {
+        "knowledge_main": "越界字段",
+        "memory_aids": [{"title": "也不允许"}],
+    }
+
+    stats = generate_vault(config_path=config)
+
+    assert stats == {"total": 1, "generated": 0, "skipped": 0, "failed": 1}
+    assert not (vault / "磁与电磁感应" / "电磁感应" / "q1.md").exists()
+    assert (vault / "00_今日电磁学吐槽.md").exists()
