@@ -4,7 +4,7 @@
 
 1. 开发与运行环境为本地纯 Python 环境（Python 3.10+），运行在 Windows 11 的 WSL Ubuntu 中，不构建 Web 后端或数据库。
 2. 源数据 questions_em.json 在本项目边界之外通过人工或 OCR 工具准备好并确保格式合法；本项目从“读取合法 JSON”开始，不负责 OCR 或题目抓取。
-3. 项目中存在一个统一的 llm_client.py，通过 LiteLLM 调用可配置的大模型。开发阶段默认使用 Windows 11 WSL Ubuntu 中运行的 Ollama/Qwen3.5:9b；通过 LiteLLM `ollama_chat` 调用；后续可切换 Gemini、ChatGPT 等云端模型进行独立复核。API Key 等云端凭证通过 .env 或环境变量读取，严禁硬编码。业务层不得依赖具体 provider。
+3. 项目中存在一个统一的 llm_client.py，通过 LiteLLM 调用可配置的大模型。开发阶段默认使用 Windows 11 WSL Ubuntu 中运行的 Ollama/Qwen3.5:9b-opencode；通过 LiteLLM `ollama_chat` 调用；后续可切换 Gemini、ChatGPT 等云端模型进行独立复核。API Key 等云端凭证通过 .env 或环境变量读取，严禁硬编码。业务层不得依赖具体 provider。
 4. MVP 只服务于电磁学（电磁感应、交流电等高二上学期内容），题量在几十道规模以内（目标是先打通端到端流程）。
 5. 呈现端仅为 Obsidian，大量使用 [[双链]] 与 > [!tip] 等 callout 语法，但不强依赖第三方插件。
 6. 单机 / 单 Vault 场景（可由一个学生或家庭共用），不考虑账号系统、多用户权限或跨设备同步（交由 Obsidian Sync 或网盘解决）。
@@ -50,7 +50,7 @@
   - python-dotenv：从 .env 文件加载环境变量（如 API Key）。
   - LiteLLM：
     - llm_client.py 作为唯一 LLM 接入层。
-    - 默认路由 `ollama_chat/qwen3.5:9b`，通过配置切换到 Gemini、ChatGPT 等模型。Generate 默认关闭 thinking 以优化本地 CPU 吞吐，Verify 默认开启 thinking 以支持独立求解；该 provider-specific 参数映射只存在于 llm_client.py。
+    - 默认路由 `ollama_chat/qwen3.5:9b-opencode`，通过配置切换到 Gemini、ChatGPT 等模型。Generate 默认关闭 thinking 以优化本地 CPU 吞吐，Verify 默认开启 thinking 以支持独立求解；该 provider-specific 参数映射只存在于 llm_client.py。
     - 对上层暴露统一的 Python 函数接口，不直接散落 provider-specific SDK/HTTP 调用。
 
 - 开发工具
@@ -98,9 +98,9 @@
 
 - src/
   - schema.py
-    Pydantic 模型定义，例如 KnowledgePoint、EMQuestion，约束 JSON 结构。
+    Pydantic 模型定义，例如 KnowledgePoint、EMQuestion、FunnyTutorPayload，约束 canonical 数据与 LLM Generate 输出结构。
   - llm_client.py
-    LiteLLM 统一客户端，负责构造 Prompt、路由模型、发起调用、提取并解析结构化 JSON，以及 generation/verification 模式。
+    LiteLLM 统一客户端，负责构造 Prompt、路由模型、发起调用、提取 JSON，并在 Generate 模式执行 FunnyTutorPayload 严格校验。
   - markdown_renderer.py
     纯函数模块，将 EMQuestion 与 LLM 输出组合为 Obsidian Markdown 字符串。
   - daily_index.py
@@ -173,8 +173,8 @@
 
 ## LLM 输出格式与 llm_client 契约
 
-为保证精确性和 token 经济性，LLM 的输出统一为结构化 JSON，由 llm_client.py 解析为 Python dict，再交给渲染模块。
-### 单题目标输出结构
+为保证精确性和 token 经济性，LLM 的输出统一为结构化 JSON，由 llm_client.py 解析并执行业务 Schema 校验，再交给渲染模块。JSON 可解析不代表业务响应有效。
+### 单题 Generate 输出结构（严格契约）
 
     {
       "funny_explanation": "一段大白话解释...",
@@ -189,9 +189,12 @@
     }
 
 字段约束：
-- funny_explanation：字符串，可多句，不含复杂 Markdown 结构，由渲染模块负责包裹为 Callout 内容。
-- memory_aids：字符串列表，建议长度 1–3，每条简短有力。
-- common_misconceptions：字符串列表，建议长度 1–3，聚焦概念性与方法性的易错点。
+- funny_explanation：非空字符串，可多句，不含复杂 Markdown 结构，由渲染模块负责包裹为 Callout 内容。
+- memory_aids：字符串列表，严格 1–3 条，每条简短有力。
+- common_misconceptions：字符串列表，严格 1–3 条，聚焦概念性与方法性的易错点。
+- 使用 Pydantic FunnyTutorPayload 严格校验；额外字段一律拒绝，列表项必须是字符串，空字符串一律拒绝。
+- JSON 能解析不等于业务成功；只有通过 FunnyTutorPayload 校验后才算 Generate 成功。
+- 特别禁止模型输出 knowledge_main、knowledge_tree_path、knowledge_points 或任何 canonical 元数据字段。
 
 ### llm_client.py 的责任
 
@@ -206,9 +209,10 @@
 - 函数内部应当：
   - 从 prompts/funny_tutor_em.txt 载入 System Prompt 与 Few-shot 示例。
   - 通过 LiteLLM 发起调用，不让上层业务感知具体 provider。
-  - 对返回文本执行“剥离 JSON”逻辑：
+  - 对返回文本执行“剥离 JSON”逻辑后，按 generation / verification 模式执行对应的业务 Schema 校验：
     - 能处理“纯 JSON 文本”或“被 Markdown 代码块包裹的 JSON 文本”两种情况（注意：解析时必须使用正则如 r"^" + r"```" + r"json" 或字符串方法去壳，防止被 Markdown 解析器截断）。
     - 提取第一个看起来是 JSON 对象的片段，再用 json.loads 解析。
+    - generation 必须进一步通过 FunnyTutorPayload Pydantic 校验；只得到任意 JSON object 不能视为成功。
   - 在解析失败时抛出明确的异常，描述题目 ID 与失败原因，上层可据此跳过该题的 Funny 生成。
 
 - Prompt 中必须强调：
@@ -280,8 +284,9 @@ MVP 抽题策略：简单随机且当次不重复。
      - 构造合法与不合法 JSON 片段，验证合法数据被成功解析，不合法数据抛出清晰异常。
   2. Markdown 渲染（test_renderer.py）
      - 断言生成的 Markdown 字符串包含 Callout 标题行、双链字符串及图像引用字符串。
-  3. LLM 解析逻辑（test_llm_client.py）
-     - 使用 mock 响应验证无论是纯 JSON 还是带代码块外壳的 JSON 都能被稳定解析。
+  3. LLM 解析与输出契约（test_llm_client.py）
+     - 使用 mock 响应验证纯 JSON / 代码块外壳均可解析。
+     - Generate payload 必须通过 FunnyTutorPayload；缺字段、额外字段、错误嵌套类型均失败并包含题目 ID。
   4. 抽题逻辑（test_daily_index.py）
      - 验证抽取的题目数量正确且无重复。
 
@@ -316,8 +321,9 @@ MVP 抽题策略：简单随机且当次不重复。
 1. Schema 完备与验证通过：canonical EMQuestion 能校验正式题库；当前 data/questions_em.json 仅作为 fixture，可通过明确的映射/补全流程进入 canonical model。
 2. 端到端增量生成稳定：初次运行生成全量卡片和主页；新增题目后再次运行，旧题跳过调用，新题触发调用并更新主页。
 3. 资产沙盒隔离兼容：图片正确从项目源目录复制至 Vault 内，相对路径引用在 Obsidian 中正常渲染。
-4. LLM 响应解析鲁棒：无论 JSON 是否包裹了代码块语法，解析器均不抛出 JSONDecodeError。
-5. 测试与 Lint 全部通过：pytest 全部通过，ruff check 无阻塞级错误。
+4. LLM 响应解析鲁棒：无论 JSON 是否包裹了代码块语法，解析器均能提取 JSON。
+5. LLM Generate 输出契约可靠：合法 payload 必须通过 FunnyTutorPayload；额外字段、缺字段、错误嵌套类型均被拒绝，不能继续写入题卡。
+6. 测试与 Lint 全部通过：pytest 全部通过，ruff check 无阻塞级错误。
 
 ## Open Questions
 
