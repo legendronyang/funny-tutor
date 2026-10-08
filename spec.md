@@ -205,6 +205,20 @@ FunnyTutorPayload 是 LLM Generate 输出契约，属于生成层响应 Schema�
 - 特别禁止模型输出 knowledge_main、knowledge_tree_path、knowledge_points 或任何 canonical 元数据字段。
 - 当前本地 Ollama Generate 调用同时使用 JSON Schema structured output 与 temperature=0.0；这是 Prompt 约束之外的第二层输出约束。返回结果仍必须通过 FunnyTutorPayload Pydantic 校验。
 
+### Generate 内容质量约束（Content Quality Gate）
+
+结构化 JSON 与 Pydantic 校验只能证明响应字段合规，不能证明物理解释正确。生成的 Funny Tutor 内容还必须满足以下人工质量验收条件：
+
+- **方向与大小分开表述：** 题干未提供方向或电荷符号时，不得擅自断言力的方向；涉及矢量时，只陈述已知条件支持的结论。
+- **不补写题设条件：** 不得把题目未给出的方向、符号、初始条件或运动状态当成事实。
+- **解释关键推理：** 解释应连接题目条件、核心物理关系和求解目标；“最小值”等关键词只有在题意支持时才能转化为临界条件。
+- **检查单位与幂次：** 涉及计算时，重点检查 SI 单位换算、平方/立方关系和数量级；不得未经核算声称某个数量级或选项正确。
+- **易错点具有题目针对性：** 每条 common_misconceptions 都应对应本题的具体条件、公式或计算步骤，避免泛化、重复或与本题无关的提醒。
+- **幽默服从物理准确性：** 类比不能替代必要的物理条件，也不能把大小相等写成方向相同。
+
+该 Gate 在当前 MVP 中通过检查真实生成的 Markdown 卡片进行人工验收，不等同于自动化物理正确性证明。对首题通过内容质量验收后，才开始 10 题批量 Generate；若未通过，先调整 Prompt 并重复单题 Smoke Test。不得因 JSON 合法、生成成功或 Callout 存在就认定内容质量通过。
+
+
 ### llm_client.py 的责任
 
 - 通过 LiteLLM 统一调用配置指定的 provider/model；开发阶段默认 Ollama/Qwen3.5:9b-opencode，通过 LiteLLM `ollama_chat` 调用。
