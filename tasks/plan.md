@@ -15,6 +15,7 @@
 - 资产沙盒同步：主控脚本在运行时负责将源数据的 data/assets/ 目录全量复制或同步至 Vault 的资产目录内（vault/FunnyTutor_EM_Vault/assets/）。
 - 防爆破 JSON 解析：LLM 客户端必须包含剥离代码块外壳的清洗逻辑。
 - 严格 Generate 输出契约：JSON extraction 之后必须通过 FunnyTutorPayload Pydantic schema；额外字段、缺字段或错误嵌套类型一律拒绝。
+- Native structured output：当前 Ollama `ollama_chat` Generate 请求同时传递 FunnyTutorPayload 的 JSON Schema 与 temperature=0.0，减少 Qwen 在 JSON 外壳和字段结构上的随机偏离；本地 Pydantic 校验仍保留为最后一道边界。
 
 ## Task List
 
