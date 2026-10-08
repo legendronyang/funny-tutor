@@ -11,8 +11,10 @@
 - Canonical question bank：`data/questions_em.json` 是开发阶段的测试素材，不定义正式题库 Schema。正式题库由 `EMQuestion` 定义；来源可以是人工录入、OCR 或其他外部系统，这些来源不属于当前项目边界。
 - Independent verification：题库中已有答案/解析时，模型必须独立求解后再与已有内容比较；不得把 provided answer 当作模型推理依据。空字段进入 generation，已有字段进入 verification。验证结果应保留来源模型、时间、结论和必要的差异信息。
 - 增量生成策略：基于文件系统的存在性检测进行增量判断，跳过已存在题卡的 LLM 请求。
+- LLM 输出边界：Generate 模式只允许 FunnyTutorPayload 的三个字段；validated payload 之外的任何字段不得进入 Markdown renderer。
 - 资产沙盒同步：主控脚本在运行时负责将源数据的 data/assets/ 目录全量复制或同步至 Vault 的资产目录内（vault/FunnyTutor_EM_Vault/assets/）。
 - 防爆破 JSON 解析：LLM 客户端必须包含剥离代码块外壳的清洗逻辑。
+- 严格 Generate 输出契约：JSON extraction 之后必须通过 FunnyTutorPayload Pydantic schema；额外字段、缺字段或错误嵌套类型一律拒绝。
 
 ## Task List
 
@@ -35,6 +37,8 @@
 
 ### Phase 3: Pipeline Integration
 - [ ] Task 5: 主管道脚本、资产同步与 IO 写出
+- [ ] Task 6: 旧题库导入适配器与 Canonical Schema 转换
+- [ ] Task 7: LLM Generate 输出契约强化与真实 Smoke Test
 
 ### Checkpoint: Complete
 - [ ] 增量生成逻辑生效，二次运行无多余 LLM 请求。
@@ -52,11 +56,17 @@
 | Risk | Impact | Mitigation |
 | | | |
 | 大模型返回包裹了代码块符号的 JSON 导致解析崩溃 | High | 在 llm_client 中使用正则提取，测试用例强制覆盖纯文本与带外壳文本两种情况。 |
+| 大模型返回合法 JSON 但业务结构错误或夹带 canonical 字段 | High | Generate 使用 FunnyTutorPayload(extra="forbid") 严格校验；pipeline 在写卡前再校验一次，并采用字段白名单 merge。 |
 | Obsidian 沙盒策略导致外部图片显示为死链 | High | 主脚本执行 shutil.copytree 强制将 data/assets/ 同步到 Vault 内部的 assets/，渲染器使用相对路径。 |
 | 误操作重新生成全部题库导致 Token 爆炸 | Medium | 默认开启增量判定，只有检测到文件不存在或显式传入 force 标志时才发起网络请求。 |
 
 ## Open Questions
 - 随着题量增加，简单的随机抽题是否会导致新题曝光率不足？（MVP 阶段暂不处理，后续可引入按日期权重的抽题策略）
+
+## Task 6 / Task 7 Closure Evidence
+
+- Task 6 本地验证：10 条旧题库记录成功转换为 Canonical JSON；Dry-run total=10、failed=0；ruff check 通过；pytest 55 tests 全部通过；原始 data/questions_em.json 无 diff。
+- Task 7 曾进行真实单题 Smoke Test，Qwen 返回合法 JSON 但缺少 funny_explanation、将 memory_aids/common_misconceptions 生成为对象数组，并夹带 knowledge_main/knowledge_tree_path/knowledge_points；该结果推动严格 Generate payload schema 与 Prompt 强化，当前 Task 7 的代码验收仍需用户重新运行真实 Smoke Test。
 
 ## Task 2 Closure Evidence
 
