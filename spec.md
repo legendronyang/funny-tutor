@@ -167,6 +167,13 @@
         funny_quick_tip: Optional[str] = None
         common_misconceptions: list[str] = []
 
+FunnyTutorPayload 是 LLM Generate 输出契约，属于生成层响应 Schema，不是 Canonical 题库字段：
+- funny_explanation：非空字符串。
+- memory_aids：1–3 条字符串。
+- common_misconceptions：1–3 条字符串。
+- 额外字段禁止；列表项必须是字符串且不能为空。
+- Generate 响应必须先通过该 Schema，再允许进入 Markdown renderer。
+
 说明：
 - 题库 JSON 作为“真相源”，至少要完整覆盖题目、解析与知识结构字段。
 - LLM 输出若只写入 Markdown 而不写回 JSON，MVP 可以接受；缓存机制可作为后续优化。
@@ -198,7 +205,7 @@
 
 ### llm_client.py 的责任
 
-- 通过 LiteLLM 统一调用配置指定的 provider/model；开发阶段默认 Ollama/Qwen3.5:9b，通过 LiteLLM `ollama_chat` 调用。
+- 通过 LiteLLM 统一调用配置指定的 provider/model；开发阶段默认 Ollama/Qwen3.5:9b-opencode，通过 LiteLLM `ollama_chat` 调用。
 - 提供 generation / verification 两种模式的明确契约：generation 生成缺失字段；verification 独立求解后比较已有可信字段。
 - 提供核心函数（示意）：
       def generate_funny_payload(question_context: dict) -> dict:
