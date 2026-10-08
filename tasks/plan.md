@@ -50,6 +50,7 @@
 - 本任务的最终验收必须包含一次真实 Qwen 单题 Smoke Test；通过后才允许进入 10 题全量生成。
 - 首卡内容 Quality Gate 独立于结构化输出 Gate：检查矢量方向/大小、不臆断题设、单位与幂次、数量级、以及本题针对性的易错点。该检查当前是人工内容验收，不声称 Pydantic 能证明物理正确性。
 - 对于求电荷量大小的题目，质量 Gate 还要求在正文中始终使用绝对值公式（如 `|q|E=mg`、`|q|=mg/E`），并解释低于临界电荷量时电场力不足以平衡重力。方向不能凭空假定，但可以从题目明确支持的平衡条件推导。
+- 来源保护与生成准确性必须分层：canonical 原题/答案/官方解析严格只读，但 Funny Tutor 可以在新生成文本中独立给出更严谨的等价公式，不应因来源解析出现带符号表达就照抄到求电荷量大小的解释中。首题还要求明确展示 `r=1 mm=10^-3 m` 及 `r^3=(10^-3 m)^3=10^-9 m^3`。
 
 ### Checkpoint: Complete
 - [ ] 增量生成逻辑生效，二次运行无多余 LLM 请求。
@@ -80,6 +81,7 @@
 - Task 7 曾进行真实单题 Smoke Test，Qwen 返回合法 JSON 但缺少 funny_explanation、将 memory_aids/common_misconceptions 生成为对象数组，并夹带 knowledge_main/knowledge_tree_path/knowledge_points；随后又出现同一链路的非 JSON 响应，说明仅依赖 Prompt 不足。当前实现已升级为 Prompt + Ollama JSON Schema structured output + Pydantic validation，并将 Generate temperature 固定为 0.0；仍需用户重新运行真实 Smoke Test 验收。
 - 最新单题端到端 Smoke Test 已结构性通过：`generated=1, skipped=0, failed=0`，运行约 1m45s，Markdown 中存在 Funny Tutor 与翻车点 Callout；但内容 Gate 未通过，因为解释将电场力未经条件说明地称为“向上推力”，易错点也未优先覆盖毫米到米的换算与半径三次方。Prompt 已在 commit `3a81a7452f226ecf9d26bebcb142d8453e8588b4` 加入方向/大小、禁止补条件、单位/数量级和题目针对性约束；下一步由用户用同一题复测，质量 Gate 尚未判定通过。
 - 后续单题 Smoke Test（约 1m15.7s）已改善方向推理和单位/幂次提醒，但仍在正文中混用 `q=mg/E` 与 `|q|E=mg`，且未充分解释最小阈值的因果条件。Prompt 已在 commit `cdd5dca7b0e5d519d48e2a14dd40f4941d0c3e0a` 强化：求电荷量大小时公式统一使用绝对值；若最小值对应临界平衡，应说明低于阈值时电场力为何不足以抵消重力。内容 Quality Gate 仍待用户对同一题复测。
+- 新一轮单题 Smoke Test（约 1m55.7s）已解释低于阈值时电场力不足，但生成正文仍使用 `mg=Eq`，只在后面的记忆辅助单独写 `|q|=mg/E`，单位换算也未明确写出 `r=1 mm=10^-3 m` 与立方结果。Prompt 进一步修改为 commit `8ed928036616c271652e75418c94331687a686cb`：澄清 canonical 来源只读不限制新生成内容写出严谨等价公式，并要求首题显式展示单位/立方换算。质量 Gate 仍待复测。
 
 ## Task 2 Closure Evidence
 
