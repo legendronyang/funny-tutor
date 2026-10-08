@@ -17,12 +17,22 @@ from typing import Any
 
 try:
     from .daily_index import build_daily_index
-    from .llm_client import LLMClient, decide_field_mode, load_llm_config, load_system_prompt
+    from .llm_client import (
+        LLMClient,
+        decide_field_mode,
+        load_llm_config,
+        load_system_prompt,
+    )
     from .markdown_renderer import render_question_card
     from .schema import EMQuestion
 except ImportError:  # pragma: no cover - supports direct script execution
     from daily_index import build_daily_index
-    from llm_client import LLMClient, decide_field_mode, load_llm_config, load_system_prompt
+    from llm_client import (
+        LLMClient,
+        decide_field_mode,
+        load_llm_config,
+        load_system_prompt,
+    )
     from markdown_renderer import render_question_card
     from schema import EMQuestion
 
@@ -35,7 +45,7 @@ def _load_questions(path: Path) -> list[EMQuestion]:
     """Load and validate the canonical question bank before processing."""
     raw = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(raw, list):
-        raise ValueError("Question bank must be a JSON array")
+        raise TypeError("Question bank must be a JSON array")
     return [EMQuestion.model_validate(item) for item in raw]
 
 
@@ -163,9 +173,9 @@ def generate_vault(
             target.write_text(markdown, encoding="utf-8")
             generated += 1
             LOGGER.info("GENERATED %s -> %s", question.id, target)
-        except Exception as exc:
+        except Exception:
             failed += 1
-            LOGGER.exception("SKIP %s: LLM/rendering failed: %s", question.id, exc)
+            LOGGER.exception("SKIP %s: LLM/rendering failed", question.id)
             continue
 
     dashboard = vault_dir / "00_今日电磁学吐槽.md"
