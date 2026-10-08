@@ -174,11 +174,23 @@ class LLMClient:
                 )
             kwargs["api_key"] = api_key
 
+        if mode == "generate":
+            kwargs["temperature"] = 0.0
+
         # Ollama's chat endpoint exposes Qwen thinking as the 'think' parameter.
         # Keep this provider-specific mapping inside the client so upper layers
         # remain provider-agnostic. Cloud providers do not receive this kwarg.
         if self.config.model.startswith("ollama_chat/"):
             kwargs["think"] = self._thinking_for_mode(mode)
+            if mode == "generate":
+                kwargs["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "FunnyTutorPayload",
+                        "strict": True,
+                        "schema": FunnyTutorPayload.model_json_schema(),
+                    },
+                }
 
         try:
             response = litellm.completion(**kwargs)
