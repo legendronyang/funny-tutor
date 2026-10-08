@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class KnowledgePoint(BaseModel):
@@ -22,6 +22,29 @@ class KnowledgePoint(BaseModel):
     prerequisites: list[str] = Field(default_factory=list)
     typical_pitfalls: list[str] = Field(default_factory=list)
 
+
+class FunnyTutorPayload(BaseModel):
+    """Strict LLM output contract for a generated Funny Tutor card payload."""
+
+    model_config = ConfigDict(strict=True, extra="forbid")
+
+    funny_explanation: str
+    memory_aids: list[str] = Field(min_length=1, max_length=3)
+    common_misconceptions: list[str] = Field(min_length=1, max_length=3)
+
+    @field_validator("funny_explanation")
+    @classmethod
+    def _explanation_must_not_be_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("funny_explanation must not be blank")
+        return value
+
+    @field_validator("memory_aids", "common_misconceptions")
+    @classmethod
+    def _items_must_not_be_blank(cls, values: list[str]) -> list[str]:
+        if any(not value.strip() for value in values):
+            raise ValueError("Funny Tutor list items must not be blank")
+        return values
 
 
 class EMQuestion(BaseModel):
