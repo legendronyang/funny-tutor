@@ -8,7 +8,6 @@ from types import SimpleNamespace
 import pytest
 
 from src.llm_client import (
-
     LLMClient,
     LLMConfig,
     LLMResponseError,
@@ -17,7 +16,6 @@ from src.llm_client import (
     load_system_prompt,
     parse_json_response,
 )
-
 from src.schema import FunnyTutorPayload
 
 
