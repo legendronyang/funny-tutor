@@ -33,6 +33,7 @@ except ImportError:  # pragma: no cover - supports direct script execution
         decide_field_mode,
         load_llm_config,
         load_system_prompt,
+        validate_funny_payload,
     )
     from markdown_renderer import render_question_card
     from schema import EMQuestion
