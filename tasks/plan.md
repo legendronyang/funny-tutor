@@ -75,7 +75,7 @@
 ## Task 6 / Task 7 Closure Evidence
 
 - Task 6 本地验证：10 条旧题库记录成功转换为 Canonical JSON；Dry-run total=10、failed=0；ruff check 通过；pytest 55 tests 全部通过；原始 data/questions_em.json 无 diff。
-- Task 7 曾进行真实单题 Smoke Test，Qwen 返回合法 JSON 但缺少 funny_explanation、将 memory_aids/common_misconceptions 生成为对象数组，并夹带 knowledge_main/knowledge_tree_path/knowledge_points；该结果推动严格 Generate payload schema 与 Prompt 强化，当前 Task 7 的代码验收仍需用户重新运行真实 Smoke Test。
+- Task 7 曾进行真实单题 Smoke Test，Qwen 返回合法 JSON 但缺少 funny_explanation、将 memory_aids/common_misconceptions 生成为对象数组，并夹带 knowledge_main/knowledge_tree_path/knowledge_points；随后又出现同一链路的非 JSON 响应，说明仅依赖 Prompt 不足。当前实现已升级为 Prompt + Ollama JSON Schema structured output + Pydantic validation，并将 Generate temperature 固定为 0.0；仍需用户重新运行真实 Smoke Test 验收。
 
 ## Task 2 Closure Evidence
 
