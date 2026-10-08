@@ -139,7 +139,8 @@ Task 5 的主管道在导入模块时已可正常启动，但执行 Dry-run 时�
 
 新增 `src/import_questions.py`，将现有 OCR/历史格式题库转换为 `EMQuestion` 标准结构。为题目生成确定性 ID，映射来源字段，保留原始题干、答案和官方解析，输出前使用 Pydantic 完整校验并检查 ID 唯一性。缺少的知识点、难度和题型信息明确标记为待人工确认。更新 `config.toml`，让 Vault Generator 读取转换后的 `data/questions_em_canonical.json`，而不是直接读取旧格式来源文件。
 
-**Acceptance criteria：**
+**Acceptance criteria：
+
 - [x] 原始 `data/questions_em.json` 不被覆盖或修改。
 - [x] 转换脚本能把当前旧格式题库转换成标准 `EMQuestion` JSON。
 - [x] 同一条来源记录重复转换会产生相同 ID；不同记录的 ID 必须唯一，否则转换失败。
@@ -174,13 +175,16 @@ Task 6 已打通真实旧题库到 Canonical Schema。随后进行真实单题 G
 
 **目标：**
 
-严格区分“JSON 可解析”和“业务响应合规”。Generate 模式必须输出 FunnyTutorPayload；LLM Client 和 Vault 写入边界都要校验；renderer 只能接收白名单字段。Prompt 必须明确输出 schema 与禁止字段。
+严格区分“JSON 可解析”和“业务响应合规”，并将模型输出约束从 Prompt 单层约束升级为“Prompt + Ollama JSON Schema + Pydantic validation”三层边界。
+
+Generate 模式必须输出 FunnyTutorPayload；LLM Client 和 Vault 写入边界都要校验；renderer 只能接收白名单字段。Prompt 必须明确输出 schema 与禁止字段。
 
 **Acceptance criteria：**
 - [ ] FunnyTutorPayload 使用严格 Pydantic 校验：三个字段必需，列表项为字符串，memory_aids/common_misconceptions 各 1–3 条，禁止额外字段。
 - [ ] Generate 模式的 LLMClient.complete_json() 在 JSON extraction 后执行 FunnyTutorPayload 校验；失败异常包含题目 ID。
 - [ ] generate_vault.py 在写 Markdown 前再次校验 Generate payload，并采用字段白名单合并。
 - [ ] Generate Prompt 明确列出完整 JSON schema、字段类型、禁止字段和只读输入约束。
+- [ ] Ollama `ollama_chat` Generate 请求传递 FunnyTutorPayload JSON Schema，并将 temperature 固定为 0.0。
 - [ ] 自动化测试覆盖缺字段、额外字段、错误嵌套类型、非法 Generate response 不写卡。
 - [ ] ruff check src tests 和 pytest tests/ -v 通过。
 - [ ] 真实 Qwen 单题 Smoke Test 返回严格合法的 Generate payload，并生成包含 Funny Tutor callout 的 Markdown 卡片。
