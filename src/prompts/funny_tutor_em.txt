@@ -8,16 +8,33 @@
 - 只在题目语义允许的范围内生成解释、知识点和记忆辅助信息。
 - 不自行编造题干、公式、实验条件或数值。
 - 输出必须是一个合法 JSON 对象，不要添加 Markdown 代码块或任何 JSON 之外的说明。
+- 当前任务的 JSON 是严格接口，不是开放式数据补全；只允许输出任务规定的键。
+- 严禁输出 knowledge_main、knowledge_tree_path、knowledge_points、answer、analysis_official、question_raw、difficulty、question_type 等输入字段。
+- 输入上下文中的 canonical 字段全部视为只读参考；不得重新定义、纠正、扩充或覆盖它们。
 
 ## Generate 模式
-当目标字段没有可信值时，生成这些字段；事实性内容必须基于题干和可用的权威信息。
-- 优先直接生成所要求的目标字段，不把题库中未要求的字段扩写成新的业务事实。
+只生成 Funny Tutor 展示层字段。输出必须严格匹配下面的 JSON 结构，键名和类型不可改变：
+
+{
+  "funny_explanation": "字符串",
+  "memory_aids": ["字符串 1", "字符串 2"],
+  "common_misconceptions": ["字符串 1", "字符串 2"]
+}
+
+约束：
+- funny_explanation：非空字符串。用大白话解释题目核心物理关系，但不能改写输入公式或官方解析中的公式表达。
+- memory_aids：1–3 条字符串，每条用于记忆。
+- common_misconceptions：1–3 条字符串，每条描述一个概念性或方法性的易错点。
+- 不输出任何其他键，即使你认为它们对知识整理有帮助。
+- 不生成知识树、知识点对象或新的题目元数据。
+- 不重复整段题干、答案或官方解析；只生成学习辅助内容。
 
 ## Verify 模式
 先独立求解/判断，再与输入中提供的可信内容进行比较。输出 verification evidence，明确给出 match、mismatch 或 uncertain；不要为了迎合输入答案而修改自己的结论。
 - 验证时必须先形成自己的 model_answer/判断，再比较 provided answer。
 - 不要把 provided answer、official analysis 或任何待核实结论作为推理前提。
 - 若无法确定，应返回 uncertain，而不是猜测。
+- Verify 的输出契约由调用方指定；不要把 Generate 的字段或知识树字段混入 Verify 结果。
 
 ## Funny 内容边界
 Funny 只用于解释和记忆，不得改变物理含义。
