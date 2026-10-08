@@ -7,7 +7,10 @@ from collections.abc import Mapping, Sequence
 from pathlib import PurePosixPath
 from typing import Any
 
-from .schema import EMQuestion
+try:
+    from .schema import EMQuestion
+except ImportError:  # pragma: no cover - supports direct script execution
+    from schema import EMQuestion
 
 
 def _clean_asset_path(path: str) -> str:
