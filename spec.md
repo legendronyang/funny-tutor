@@ -200,8 +200,10 @@ FunnyTutorPayload 是 LLM Generate 输出契约，属于生成层响应 Schema�
 - memory_aids：字符串列表，严格 1–3 条，每条简短有力。
 - common_misconceptions：字符串列表，严格 1–3 条，聚焦概念性与方法性的易错点。
 - 使用 Pydantic FunnyTutorPayload 严格校验；额外字段一律拒绝，列表项必须是字符串，空字符串一律拒绝。
+- 当前 `ollama_chat` Generate 请求通过 LiteLLM `response_format` 传递同一 JSON Schema，并将 temperature 固定为 0.0 以提高重复运行的确定性。
 - JSON 能解析不等于业务成功；只有通过 FunnyTutorPayload 校验后才算 Generate 成功。
 - 特别禁止模型输出 knowledge_main、knowledge_tree_path、knowledge_points 或任何 canonical 元数据字段。
+- 当前本地 Ollama Generate 调用同时使用 JSON Schema structured output 与 temperature=0.0；这是 Prompt 约束之外的第二层输出约束。返回结果仍必须通过 FunnyTutorPayload Pydantic 校验。
 
 ### llm_client.py 的责任
 
