@@ -125,3 +125,42 @@
 - vault/ (写入)
 
 **Estimated scope:** Medium: 1-2 files
+---
+
+## Task 6: 旧题库导入适配器与 Canonical Schema 转换
+
+**背景与问题：**
+
+Task 5 的主管道在导入模块时已可正常启动，但执行 Dry-run 时，`data/questions_em.json` 中的历史 OCR 题目记录无法通过 `EMQuestion` 校验。原始记录使用 `category`、`question`、`analysis` 等来源字段，并缺少标准模型要求的 `id`、`subject`、`question_type`、知识树、知识点和难度等字段。49 项单元测试此前全部通过，是因为主管道测试使用了符合 Canonical Schema 的模拟题目，没有覆盖真实的旧格式输入。
+
+不能通过放宽 `EMQuestion` 必填约束来掩盖问题，也不能让 LLM 或导入脚本悄悄编造知识标注。应在原始来源与主管道之间增加一个显式、可重复、可测试的转换边界。原始文件保留不动，转换结果写入独立的 Canonical JSON 文件；缺少可靠标注的字段必须使用醒目的待标注占位符并在导入报告中披露，不能把占位值误认为已确认的教学内容。
+
+**Description：**
+
+新增 `src/import_questions.py`，将现有 OCR/历史格式题库转换为 `EMQuestion` 标准结构。为题目生成确定性 ID，映射来源字段，保留原始题干、答案和官方解析，输出前使用 Pydantic 完整校验并检查 ID 唯一性。缺少的知识点、难度和题型信息明确标记为待人工确认。更新 `config.toml`，让 Vault Generator 读取转换后的 `data/questions_em_canonical.json`，而不是直接读取旧格式来源文件。
+
+**Acceptance criteria：**
+- [ ] 原始 `data/questions_em.json` 不被覆盖或修改。
+- [ ] 转换脚本能把当前旧格式题库转换成标准 `EMQuestion` JSON。
+- [ ] 同一条来源记录重复转换会产生相同 ID；不同记录的 ID 必须唯一，否则转换失败。
+- [ ] 题干中的 LaTeX、答案和官方解析按原文保留。
+- [ ] 不推断或伪造知识点、难度和题型；缺失信息使用明确的待标注占位符并在报告中统计。
+- [ ] 输入字段缺失、JSON 顶层类型错误或标准模型校验失败时，转换失败且不写出不完整的输出文件。
+- [ ] `config.toml` 的 `questions_json` 指向转换后的 Canonical JSON 文件。
+- [ ] `ruff check src tests` 和 `pytest tests/ -v` 通过。
+
+**Verification：**
+- [ ] 执行 `python src/import_questions.py`，确认生成 `data/questions_em_canonical.json` 和待标注统计。
+- [ ] 执行 `python src/generate_vault.py --config config.toml --dry-run`，确认真实转换结果通过 Canonical Schema 校验。
+- [ ] 检查转换前后题干、答案和官方解析一致，且原始来源文件没有变化。
+- [ ] 在人工补齐知识标注前，不把占位知识节点视为正式知识树内容。
+
+**Dependencies：** Task 1（Schema）、Task 5（Pipeline 输入契约）
+
+**Files likely touched：**
+- `src/import_questions.py`
+- `tests/test_import_questions.py`
+- `config.toml`
+- `data/questions_em_canonical.json`（运行时生成，不要求提交生成数据）
+
+**Estimated scope：** Medium: 3-4 files
