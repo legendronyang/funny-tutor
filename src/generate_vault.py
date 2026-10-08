@@ -22,6 +22,7 @@ try:
         decide_field_mode,
         load_llm_config,
         load_system_prompt,
+        validate_funny_payload,
     )
     from .markdown_renderer import render_question_card
     from .schema import EMQuestion
@@ -93,14 +94,16 @@ def _question_prompt(question: EMQuestion) -> str:
 
 
 def _merge_payload(question: EMQuestion, payload: dict[str, Any]) -> dict[str, Any]:
-    """Use LLM fields when present and canonical fields as safe fallbacks."""
-    merged: dict[str, Any] = {
+    """Merge only renderer-owned Funny fields; never allow payload field smuggling."""
+    return {
+        "funny_explanation": payload.get("funny_explanation"),
         "funny_quick_tip": question.funny_quick_tip,
-        "memory_aids": question.memory_aids,
-        "common_misconceptions": question.common_misconceptions,
+        "memory_aids": payload.get("memory_aids", question.memory_aids),
+        "common_misconceptions": payload.get(
+            "common_misconceptions",
+            question.common_misconceptions,
+        ),
     }
-    merged.update(payload)
-    return merged
 
 
 def generate_vault(
@@ -162,6 +165,8 @@ def generate_vault(
                 user_prompt=_question_prompt(question),
                 mode=mode,
             )
+            if mode == "generate":
+                payload = validate_funny_payload(payload, question.id).model_dump(mode="json")
             asset_relative_path = Path(
                 os.path.relpath(vault_dir / "assets", target.parent)
             ).as_posix()
