@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from src.import_questions import convert_file, convert_legacy_question
+from src.import_questions import PROJECT_ROOT, convert_file, convert_legacy_question
 
 
 def legacy_question() -> dict:
@@ -78,3 +78,16 @@ def test_convert_file_rejects_non_array_source(tmp_path: Path) -> None:
 
     with pytest.raises(TypeError, match="JSON array"):
         convert_file(input_path, tmp_path / "canonical.json")
+
+def test_repository_legacy_fixture_converts_to_canonical_schema(tmp_path: Path) -> None:
+    source_path = PROJECT_ROOT / "data" / "questions_em.json"
+    output_path = tmp_path / "questions_em_canonical.json"
+
+    report = convert_file(source_path, output_path)
+
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    assert report["total"] == len(saved)
+    assert report["total"] > 0
+    assert len({item["id"] for item in saved}) == len(saved)
+    assert all(item["question_raw"] and item["analysis_official"] for item in saved)
+
