@@ -64,7 +64,11 @@ def _sync_assets(source: Path, destination: Path) -> None:
 
 def _question_path(vault_dir: Path, question: EMQuestion) -> Path:
     """Return the deterministic Markdown path for one question."""
-    relative_parts = [part.strip() for part in question.knowledge_tree_path if part.strip()]
+    relative_parts = [
+        part.strip()
+        for part in question.knowledge_tree_path
+        if part.strip()
+    ]
     if not relative_parts:
         raise ValueError(f"Question {question.id} has an empty knowledge_tree_path")
     return vault_dir.joinpath(*relative_parts, f"{question.id}.md")
@@ -80,7 +84,10 @@ def _question_prompt(question: EMQuestion) -> str:
         "analysis_official": question.analysis_official,
         "knowledge_main": question.knowledge_main,
         "knowledge_tree_path": question.knowledge_tree_path,
-        "knowledge_points": [point.model_dump(mode="json") for point in question.knowledge_points],
+        "knowledge_points": [
+            point.model_dump(mode="json")
+            for point in question.knowledge_points
+        ],
         "memory_aids": question.memory_aids,
         "funny_quick_tip": question.funny_quick_tip,
         "common_misconceptions": question.common_misconceptions,
@@ -167,7 +174,10 @@ def generate_vault(
                 mode=mode,
             )
             if mode == "generate":
-                payload = validate_funny_payload(payload, question.id).model_dump(mode="json")
+                payload = validate_funny_payload(
+                    payload,
+                    question.id,
+                ).model_dump(mode="json")
             asset_relative_path = Path(
                 os.path.relpath(vault_dir / "assets", target.parent)
             ).as_posix()
@@ -200,7 +210,11 @@ def generate_vault(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Generate the Funny Tutor Obsidian Vault")
     parser.add_argument("--config", type=Path, default=PROJECT_ROOT / "config.toml")
-    parser.add_argument("--force", action="store_true", help="Regenerate existing question cards")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Regenerate existing question cards",
+    )
     parser.add_argument(
         "--dry-run",
         action="store_true",
