@@ -9,8 +9,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
+from pydantic import ValidationError
+
 import litellm
 from dotenv import load_dotenv
+
+try:
+    from .schema import FunnyTutorPayload
+except ImportError:  # pragma: no cover - supports direct script execution
+    from schema import FunnyTutorPayload
 
 GenerationMode = Literal["generate", "verify"]
 
@@ -59,6 +66,20 @@ def parse_json_response(raw_text: str, question_id: str) -> dict[str, Any]:
         question_id,
         "unable to extract a valid JSON object from LLM response",
     )
+
+
+def validate_funny_payload(
+    payload: dict[str, Any],
+    question_id: str,
+) -> FunnyTutorPayload:
+    """Validate the strict Generate payload before it reaches the renderer."""
+    try:
+        return FunnyTutorPayload.model_validate(payload)
+    except ValidationError as exc:
+        raise LLMResponseError(
+            question_id,
+            f"invalid Generate payload: {exc}",
+        ) from exc
 
 
 @dataclass(frozen=True)
@@ -170,4 +191,7 @@ class LLMClient:
 
         if not isinstance(raw, str):
             raise LLMResponseError(question_id, "LLM response content is not text")
-        return parse_json_response(raw, question_id)
+        payload = parse_json_response(raw, question_id)
+        if mode == "generate":
+            return validate_funny_payload(payload, question_id).model_dump(mode="json")
+        return payload
