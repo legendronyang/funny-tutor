@@ -4,3 +4,4 @@ litellm>=1,<2
 
 pytest>=8,<9
 ruff>=0.8,<1
+tomli>=2,<3; python_version < "3.11"
