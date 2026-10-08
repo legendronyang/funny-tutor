@@ -8,6 +8,7 @@ model = "ollama_chat/qwen3.5:9b-opencode"
 api_base = "http://localhost:11434"
 api_key_env = ""
 timeout = 1800
+temperature = 0.0
 
 # Ollama/Qwen thinking policy.
 think_generate = false
