@@ -9,10 +9,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import ValidationError
-
 import litellm
 from dotenv import load_dotenv
+from pydantic import ValidationError
 
 try:
     from .schema import FunnyTutorPayload
