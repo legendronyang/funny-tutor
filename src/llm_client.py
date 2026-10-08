@@ -87,6 +87,7 @@ class LLMConfig:
     api_base: str | None = None
     api_key_env: str | None = None
     timeout: int = 180
+    temperature: float = 0.0
     think_generate: bool = False
     think_verify: bool = True
 
@@ -114,6 +115,7 @@ def load_llm_config(config_path: Path) -> LLMConfig:
         api_base=api_base if isinstance(api_base, str) and api_base else None,
         api_key_env=api_key_env if isinstance(api_key_env, str) and api_key_env else None,
         timeout=int(section.get("timeout", 180)),
+        temperature=float(section.get("temperature", 0.0)),
         think_generate=bool(section.get("think_generate", False)),
         think_verify=bool(section.get("think_verify", True)),
     )
@@ -175,7 +177,7 @@ class LLMClient:
             kwargs["api_key"] = api_key
 
         if mode == "generate":
-            kwargs["temperature"] = 0.0
+            kwargs["temperature"] = self.config.temperature
 
         # Ollama's chat endpoint exposes Qwen thinking as the 'think' parameter.
         # Keep this provider-specific mapping inside the client so upper layers
@@ -186,8 +188,6 @@ class LLMClient:
                 kwargs["response_format"] = {
                     "type": "json_schema",
                     "json_schema": {
-                        "name": "FunnyTutorPayload",
-                        "strict": True,
                         "schema": FunnyTutorPayload.model_json_schema(),
                     },
                 }
