@@ -62,6 +62,11 @@ def test_load_system_prompt_contains_hard_constraints() -> None:
     assert "绝不改写输入中的 LaTeX" in prompt
     assert "独立求解后再验证" in prompt
     assert "一个合法 JSON 对象" in prompt
+    assert "funny_explanation" in prompt
+    assert "memory_aids" in prompt
+    assert "common_misconceptions" in prompt
+    assert "knowledge_main" in prompt
+    assert "只生成 Funny Tutor 展示层字段" in prompt
 
 
 def test_complete_json_uses_ollama_thinking_policy(
