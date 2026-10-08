@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from src.schema import EMQuestion
+from src.schema import EMQuestion, FunnyTutorPayload
 
 
 def valid_question() -> dict:
@@ -91,3 +91,53 @@ def test_difficulty_must_be_between_one_and_five() -> None:
     with pytest.raises(ValidationError):
         EMQuestion.model_validate(payload)
 
+
+
+def valid_funny_payload() -> dict:
+    return {
+        "funny_explanation": "这题抓住受力平衡。",
+        "memory_aids": ["电场力和重力对着干。"],
+        "common_misconceptions": ["把电场越强误认为所需电荷越大。"],
+    }
+
+
+def test_funny_tutor_payload_is_strict() -> None:
+    payload = FunnyTutorPayload.model_validate(valid_funny_payload())
+
+    assert payload.memory_aids == ["电场力和重力对着干。"]
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["funny_explanation", "memory_aids", "common_misconceptions"],
+)
+def test_funny_tutor_payload_rejects_missing_required_field(field: str) -> None:
+    payload = valid_funny_payload()
+    payload.pop(field)
+
+    with pytest.raises(ValidationError):
+        FunnyTutorPayload.model_validate(payload)
+
+
+def test_funny_tutor_payload_rejects_extra_fields() -> None:
+    payload = valid_funny_payload()
+    payload["knowledge_main"] = "不允许"
+
+    with pytest.raises(ValidationError):
+        FunnyTutorPayload.model_validate(payload)
+
+
+def test_funny_tutor_payload_rejects_nested_object_items() -> None:
+    payload = valid_funny_payload()
+    payload["memory_aids"] = [{"title": "错误类型", "content": "错误值"}]
+
+    with pytest.raises(ValidationError):
+        FunnyTutorPayload.model_validate(payload)
+
+
+def test_funny_tutor_payload_rejects_more_than_three_items() -> None:
+    payload = valid_funny_payload()
+    payload["memory_aids"] = ["1", "2", "3", "4"]
+
+    with pytest.raises(ValidationError):
+        FunnyTutorPayload.model_validate(payload)
