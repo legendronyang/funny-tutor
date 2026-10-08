@@ -140,20 +140,20 @@ Task 5 的主管道在导入模块时已可正常启动，但执行 Dry-run 时�
 新增 `src/import_questions.py`，将现有 OCR/历史格式题库转换为 `EMQuestion` 标准结构。为题目生成确定性 ID，映射来源字段，保留原始题干、答案和官方解析，输出前使用 Pydantic 完整校验并检查 ID 唯一性。缺少的知识点、难度和题型信息明确标记为待人工确认。更新 `config.toml`，让 Vault Generator 读取转换后的 `data/questions_em_canonical.json`，而不是直接读取旧格式来源文件。
 
 **Acceptance criteria：**
-- [ ] 原始 `data/questions_em.json` 不被覆盖或修改。
-- [ ] 转换脚本能把当前旧格式题库转换成标准 `EMQuestion` JSON。
-- [ ] 同一条来源记录重复转换会产生相同 ID；不同记录的 ID 必须唯一，否则转换失败。
-- [ ] 题干中的 LaTeX、答案和官方解析按原文保留。
-- [ ] 不推断或伪造知识点、难度和题型；缺失信息使用明确的待标注占位符并在报告中统计。
-- [ ] 输入字段缺失、JSON 顶层类型错误或标准模型校验失败时，转换失败且不写出不完整的输出文件。
-- [ ] `config.toml` 的 `questions_json` 指向转换后的 Canonical JSON 文件。
-- [ ] `ruff check src tests` 和 `pytest tests/ -v` 通过。
+- [x] 原始 `data/questions_em.json` 不被覆盖或修改。
+- [x] 转换脚本能把当前旧格式题库转换成标准 `EMQuestion` JSON。
+- [x] 同一条来源记录重复转换会产生相同 ID；不同记录的 ID 必须唯一，否则转换失败。
+- [x] 题干中的 LaTeX、答案和官方解析按原文保留。
+- [x] 不推断或伪造知识点、难度和题型；缺失信息使用明确的待标注占位符并在报告中统计。
+- [x] 输入字段缺失、JSON 顶层类型错误或标准模型校验失败时，转换失败且不写出不完整的输出文件。
+- [x] `config.toml` 的 `questions_json` 指向转换后的 Canonical JSON 文件。
+- [x] `ruff check src tests` 和 `pytest tests/ -v` 通过。
 
 **Verification：**
-- [ ] 执行 `python src/import_questions.py`，确认生成 `data/questions_em_canonical.json` 和待标注统计。
-- [ ] 执行 `python src/generate_vault.py --config config.toml --dry-run`，确认真实转换结果通过 Canonical Schema 校验。
-- [ ] 检查转换前后题干、答案和官方解析一致，且原始来源文件没有变化。
-- [ ] 在人工补齐知识标注前，不把占位知识节点视为正式知识树内容。
+- [x] 执行 `python src/import_questions.py`：生成 10 条 Canonical 记录，并报告知识点、难度、题型均待复核。
+- [x] 执行 `python src/generate_vault.py --config config.toml --dry-run`：total=10、failed=0。
+- [x] 检查转换结果并确认原始 `data/questions_em.json` 未被修改；`git diff -- data/questions_em.json` 无输出。
+- [x] 在人工补齐知识标注前，Smoke Vault 使用明确的“待标注”占位节点。
 
 **Dependencies：** Task 1（Schema）、Task 5（Pipeline 输入契约）
 
@@ -166,6 +166,44 @@ Task 5 的主管道在导入模块时已可正常启动，但执行 Dry-run 时�
 **Estimated scope：** Medium: 3-4 files
 
 
-### Task 7 Scope Clarification
+## Task 7: LLM Generate 输出契约强化与真实 Smoke Test
 
-本任务只处理 Generate 模式的业务输出契约，不改变 Task 2 已通过的 Verify A/B 实验结论。Generate 的成功定义从“能解析 JSON object”升级为“JSON object 通过 FunnyTutorPayload 严格校验”。
+**背景与问题：**
+
+Task 6 已打通真实旧题库到 Canonical Schema。随后进行真实单题 Generate Smoke Test 时，Qwen 返回了合法 JSON，但输出了不属于 Generate 任务的 knowledge_main、knowledge_tree_path、knowledge_points，缺少 funny_explanation，并将 memory_aids、common_misconceptions 生成为对象数组。仅依赖 JSON extraction 会把这种响应误判为成功。
+
+**目标：**
+
+严格区分“JSON 可解析”和“业务响应合规”。Generate 模式必须输出 FunnyTutorPayload；LLM Client 和 Vault 写入边界都要校验；renderer 只能接收白名单字段。Prompt 必须明确输出 schema 与禁止字段。
+
+**Acceptance criteria：**
+- [ ] FunnyTutorPayload 使用严格 Pydantic 校验：三个字段必需，列表项为字符串，memory_aids/common_misconceptions 各 1–3 条，禁止额外字段。
+- [ ] Generate 模式的 LLMClient.complete_json() 在 JSON extraction 后执行 FunnyTutorPayload 校验；失败异常包含题目 ID。
+- [ ] generate_vault.py 在写 Markdown 前再次校验 Generate payload，并采用字段白名单合并。
+- [ ] Generate Prompt 明确列出完整 JSON schema、字段类型、禁止字段和只读输入约束。
+- [ ] 自动化测试覆盖缺字段、额外字段、错误嵌套类型、非法 Generate response 不写卡。
+- [ ] ruff check src tests 和 pytest tests/ -v 通过。
+- [ ] 真实 Qwen 单题 Smoke Test 返回严格合法的 Generate payload，并生成包含 Funny Tutor callout 的 Markdown 卡片。
+
+**Verification：**
+- [ ] 本地执行 pytest tests/ -v。
+- [ ] 本地执行 ruff check src tests。
+- [ ] 重新执行一题 Smoke Test，确认错误模型响应被明确拒绝；符合契约时生成 [!tip] Funny Tutor 和 [!warning] 翻车点。
+- [ ] 确认原始 data/questions_em.json 仍未变化。
+- [ ] 完成以上验证后，才进入 10 题全量 Generate。
+
+**Dependencies：** Task 2、Task 3、Task 5、Task 6
+
+**Files likely touched：**
+- src/schema.py
+- src/llm_client.py
+- src/generate_vault.py
+- src/prompts/funny_tutor_em.txt
+- tests/test_schema.py
+- tests/test_llm_client.py
+- tests/test_generate_vault.py
+- spec.md
+- tasks/plan.md
+- tasks/todo.md
+
+**Estimated scope：** Medium
