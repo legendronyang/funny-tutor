@@ -7,6 +7,8 @@ from types import SimpleNamespace
 
 import pytest
 
+from src.schema import FunnyTutorPayload
+
 from src.llm_client import (
     LLMClient,
     LLMConfig,
@@ -125,6 +127,14 @@ def test_complete_json_uses_ollama_thinking_policy(
     assert generate_call["model"] == "ollama_chat/qwen3.5:9b-opencode"
     assert generate_call["api_base"] == "http://localhost:11434"
     assert generate_call["think"] is False
+    assert generate_call["temperature"] == 0.0
+    assert generate_call["response_format"]["type"] == "json_schema"
+    assert generate_call["response_format"]["json_schema"]["name"] == "FunnyTutorPayload"
+    assert generate_call["response_format"]["json_schema"]["strict"] is True
+    assert (
+        generate_call["response_format"]["json_schema"]["schema"]
+        == FunnyTutorPayload.model_json_schema()
+    )
     assert verify_call["think"] is True
     assert generate_call["messages"][0]["role"] == "system"
     assert "MODE: GENERATE" in generate_call["messages"][1]["content"]
