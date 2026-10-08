@@ -48,6 +48,7 @@
 - generate_vault.py 在持久化前再次校验并采用 payload 字段白名单。
 - Prompt 与 Spec 同步定义三个允许输出键。
 - 本任务的最终验收必须包含一次真实 Qwen 单题 Smoke Test；通过后才允许进入 10 题全量生成。
+- 首卡内容 Quality Gate 独立于结构化输出 Gate：检查矢量方向/大小、不臆断题设、单位与幂次、数量级、以及本题针对性的易错点。该检查当前是人工内容验收，不声称 Pydantic 能证明物理正确性。
 
 ### Checkpoint: Complete
 - [ ] 增量生成逻辑生效，二次运行无多余 LLM 请求。
@@ -76,6 +77,7 @@
 
 - Task 6 本地验证：10 条旧题库记录成功转换为 Canonical JSON；Dry-run total=10、failed=0；ruff check 通过；pytest 55 tests 全部通过；原始 data/questions_em.json 无 diff。
 - Task 7 曾进行真实单题 Smoke Test，Qwen 返回合法 JSON 但缺少 funny_explanation、将 memory_aids/common_misconceptions 生成为对象数组，并夹带 knowledge_main/knowledge_tree_path/knowledge_points；随后又出现同一链路的非 JSON 响应，说明仅依赖 Prompt 不足。当前实现已升级为 Prompt + Ollama JSON Schema structured output + Pydantic validation，并将 Generate temperature 固定为 0.0；仍需用户重新运行真实 Smoke Test 验收。
+- 最新单题端到端 Smoke Test 已结构性通过：`generated=1, skipped=0, failed=0`，运行约 1m45s，Markdown 中存在 Funny Tutor 与翻车点 Callout；但内容 Gate 未通过，因为解释将电场力未经条件说明地称为“向上推力”，易错点也未优先覆盖毫米到米的换算与半径三次方。Prompt 已在 commit `3a81a7452f226ecf9d26bebcb142d8453e8588b4` 加入方向/大小、禁止补条件、单位/数量级和题目针对性约束；下一步由用户用同一题复测，质量 Gate 尚未判定通过。
 
 ## Task 2 Closure Evidence
 
