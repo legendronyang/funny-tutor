@@ -223,4 +223,4 @@ Generate 模式必须输出 FunnyTutorPayload；LLM Client 和 Vault 写入边�
 - [ ] 用同一道题重跑本地 Qwen 单题 Smoke Test，人工复核最终 Markdown 中三个 payload 字段的公式一致性、计算量纲/数量级、无草稿式纠错，以及静止平衡解释。
 - [ ] 在上述内容质量门通过前，不允许执行 10 题批量生成。
 
-对应 Prompt 修改提交：`38520f2bcd4c7b8510afb46ab041ae3d2e712410`。
+对应 Prompt 修改提交（含最终字段引用修正）：`fb431debacf98d43df6c7648862dd29c7451f77e`。
