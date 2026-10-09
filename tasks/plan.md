@@ -195,3 +195,10 @@
 - One acceptance issue remained: the two magnitude-error cases were combined into one misconception bullet with “(10^9) 倍或 (10^6) 倍”, rather than mapping each error to its own factor.
 - Prompt was tightened in commit `f3a3ada647463e58885861d6c6ef9e712453d8bc`: when the two cases are mentioned, they must be presented separately and explicitly mapped: treating `1 mm` as `1 m` → `10^9` factor; writing `r^3=10^-3 m^3` instead of `10^-9 m^3` → `10^6` factor. Vague combined phrasing is disallowed.
 - **Status remains: content Quality Gate pending one final local single-question Smoke Test.** Confirm the final card presents each case separately with its correct factor, while rechecking all previously passing gates. Do not run the 10-question batch until reviewed.
+
+## Task 7 — Complete calculation chain and threshold wording (2026-10-09)
+
+- The latest user-run single-question Smoke Test correctly separates the two scale errors and maps them to the correct factors (`10^9` and `10^6`); it also retains the explicit cubing identity and correctly explains field direction versus electric-force direction.
+- Two final teaching-content gaps remain: the explanation gives the formulas `m=ρV` and `|q|=mg/E` but does not spell out all four numerical stages (volume, mass, weight, charge magnitude); and the threshold phrase should explicitly say “电场力不足以平衡重力，雨滴无法保持静止”, avoiding ambiguous wording such as “支撑雨滴下落”.
+- Prompt updated in commit `241be98c882715847c46c266e0a1ed80aabe9148`: Generate must show the full numeric chain (`V≈4.2×10^-9 m^3`, `m≈4.2×10^-6 kg`, `mg≈4.2×10^-5 N`, `|q|≈4.2×10^-9 C`) with quantities and units, and use the unambiguous equilibrium statement for sub-threshold charge.
+- **Status remains: content Quality Gate pending another local single-question Smoke Test.** Review the complete numerical chain and threshold wording in addition to previously passed gates. Do not run the 10-question batch until reviewed.
