@@ -202,3 +202,29 @@
 - Two final teaching-content gaps remain: the explanation gives the formulas `m=ρV` and `|q|=mg/E` but does not spell out all four numerical stages (volume, mass, weight, charge magnitude); and the threshold phrase should explicitly say “电场力不足以平衡重力，雨滴无法保持静止”, avoiding ambiguous wording such as “支撑雨滴下落”.
 - Prompt updated in commit `241be98c882715847c46c266e0a1ed80aabe9148`: Generate must show the full numeric chain (`V≈4.2×10^-9 m^3`, `m≈4.2×10^-6 kg`, `mg≈4.2×10^-5 N`, `|q|≈4.2×10^-9 C`) with quantities and units, and use the unambiguous equilibrium statement for sub-threshold charge.
 - **Status remains: content Quality Gate pending another local single-question Smoke Test.** Review the complete numerical chain and threshold wording in addition to previously passed gates. Do not run the 10-question batch until reviewed.
+
+## Prompt-churn review and stop policy (2026-10-09)
+
+### Findings from repeated single-question Smoke Tests
+
+- The repeated iterations have progressively fixed real defects (signed-vs-magnitude formulas, arithmetic scratch work, force direction, explicit radius cubing, magnitude-factor mapping, and complete numeric calculation). This is useful fault discovery, but the workflow is at risk of **overfitting one question and endlessly appending natural-language rules**.
+- The current `FunnyTutorPayload` Pydantic schema and Ollama JSON Schema constrain shape and types; they do **not** prove that a physics explanation is correct, complete, student-facing, or free of contradictory claims. That is an enforcement-boundary gap, not something a longer Prompt alone can guarantee.
+- The tested local model (`qwen3.5:9b-opencode`, CPU-only per current setup) has shown partial compliance and improvement, but sometimes misses a nearby requirement while satisfying others. This is consistent with limited instruction-following under a dense prompt; the evidence does not establish that model capability is the sole cause.
+- A second design issue is that a shared system Prompt contained question-specific rain-drop constants and required calculations. Those requirements could leak into other questions in the 10-item bank. Commit `7715fb8c92076e6786cf5c5801168deec92aad67` scopes the rain-drop rules to the matching item and defines exactly three student-facing misconception entries for it.
+- A third issue is that visual/manual inspection of a single output has been acting as the primary quality gate. One carefully tuned case is not evidence that the same Prompt generalizes to nine different questions.
+
+### Decision: stop rule to prevent endless Prompt edits
+
+1. Treat commit `7715fb8c92076e6786cf5c5801168deec92aad67` as the **Prompt-freeze candidate**. Run one more Smoke Test on the existing rain-drop item to verify the exact three-item misconception structure and ensure no internal instructions leak into the student card.
+2. If that test passes, do not keep tuning this Prompt for minor wording preferences. Freeze the Prompt and run a **3-question pilot**: the rain-drop item plus two distinct questions selected from the remaining bank, ideally with different reasoning/units. Record results in a pass/fail matrix.
+3. For failures, classify them instead of automatically rewriting the shared Prompt:
+   - JSON keys/types/extra fields → existing schema/structured-output boundary.
+   - Explicit, deterministic constraints (required values/phrases, list count, forbidden meta-instructions) → add a small post-generation validator and tests where practical.
+   - Physics validity, omitted reasoning, or subtle contradictions → independent reviewer/checklist and manual review; do not assume JSON Schema can catch semantics.
+   - Cosmetic wording differences with correct meaning → accept, not a defect.
+4. Limit the pilot to **at most one Prompt revision** after the freeze candidate. Reopen a shared Prompt rule only if the same material defect recurs in at least two distinct questions, or a single critical physics error warrants immediate correction. If an individual question still fails, mark it for review instead of entering an automatic retry loop.
+5. After the 3-question pilot, generate the remaining questions once, inspect all ten outputs with a fixed rubric, and mark any failing card for manual correction/review. No unbounded retries and no batch processing that silently treats generation success as content-quality success.
+
+### Root-cause assessment
+
+The evidence points to a combination rather than a single cause: smaller local-model instruction-following limits; the fragility of asking one generation call to both create and self-audit prose; over-specific rules sharing one Prompt; and missing automated semantic/regression checks. The next improvement should be a layered quality gate and representative evaluation set, not an indefinitely longer Prompt.
