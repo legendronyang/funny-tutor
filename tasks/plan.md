@@ -188,3 +188,10 @@
 - Two narrower quality issues remain: the card did not explicitly show the full evaluated identity `r^3=(10^-3 m)^3=10^-9 m^3` (showing `r=...` plus a resulting volume is insufficient for this acceptance criterion); and one misconception bullet used ambiguous language about field-line direction versus electric-force direction.
 - Prompt was revised in commit `7c69e914bedd9022f988f0740d9974eaabbf259a`: the radius-cubing identity must appear explicitly and independently; `common_misconceptions` must clarify that force direction depends on charge sign and that this problem's upward electric force follows from static equilibrium, without inferring field direction or charge sign.
 - **Status remains: content Quality Gate NOT PASSED pending a new one-question local Smoke Test.** Review only the two remaining requirements alongside existing formula, arithmetic, and no-scratch-work gates. Do not run the 10-question batch yet.
+
+## Task 7 — Exact error-factor mapping follow-up (2026-10-09)
+
+- Latest user-run single-question Smoke Test passed the previously outstanding explicit radius-cubing identity and the field-versus-force direction wording. Formula consistency, intermediate magnitudes, and removal of visible scratch work also remained correct in the supplied card.
+- One acceptance issue remained: the two magnitude-error cases were combined into one misconception bullet with “(10^9) 倍或 (10^6) 倍”, rather than mapping each error to its own factor.
+- Prompt was tightened in commit `f3a3ada647463e58885861d6c6ef9e712453d8bc`: when the two cases are mentioned, they must be presented separately and explicitly mapped: treating `1 mm` as `1 m` → `10^9` factor; writing `r^3=10^-3 m^3` instead of `10^-9 m^3` → `10^6` factor. Vague combined phrasing is disallowed.
+- **Status remains: content Quality Gate pending one final local single-question Smoke Test.** Confirm the final card presents each case separately with its correct factor, while rechecking all previously passing gates. Do not run the 10-question batch until reviewed.
