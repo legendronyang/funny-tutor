@@ -174,3 +174,10 @@
 - Runtime configuration: `qwen3.5:9b-opencode`, `think_generate=false`, `think_verify=true`, `timeout=1800s`.
 - Formal A/B integration: `test_logs/test_verify_think_on_ab.log` completed 2/2 PASS. A took 840.821s; B took 1221.123s; total elapsed 2061.952s (about 34m21.95s).
 - Exploratory `think=false` direct-Ollama logs remain in `test_logs/` as diagnostic evidence and are not the formal Verify acceptance path.
+
+## Task 7 — Latest content-quality review (2026-10-09)
+
+- Latest real single-question Smoke Test was structurally successful (`generated=1, skipped=0, failed=0`), but the content Quality Gate **failed**; structural success does not imply correct teaching content.
+- Specific failures: the final explanation exposed scratch work/self-correction (“等等”“这就对上了”); it first treated approximately `4.2×10^-6` as the numerator for charge calculation, although that is the mass in kg, while the weight should be approximately `4.2×10^-5 N`; it also claimed that a larger same-kind charge could still satisfy static suspension, which conflicts with the two-force equilibrium condition. The absolute-value charge formula was not used consistently across the whole explanation.
+- Prompt hardening was checked in at commit `38520f2bcd4c7b8510afb46ab041ae3d2e712410`. It requires a finished student-facing result without scratch/self-correction, cross-checks the expected intermediate magnitudes (`m≈4.2×10^-6 kg`, `mg≈4.2×10^-5 N`, `|q|≈4.2×10^-9 C`), and states that two-force static equilibrium requires `|q|E=mg`; force smaller/larger than weight is not static equilibrium.
+- **Status remains: content Quality Gate NOT PASSED.** The user must rerun the same one-question local Qwen Smoke Test and review the rendered Markdown. Do not proceed to the 10-question batch until the explanation contains no visible scratch-work, uses mutually consistent absolute-value formulas in all three payload fields, calculates units/magnitudes correctly, and explains static equilibrium without the “more charge can still hover” claim.
