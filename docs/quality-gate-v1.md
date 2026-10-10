@@ -126,6 +126,16 @@ python src/review_gate.py \
 
 The CLI prints the computed decision and saves reports plus reasons. It does not call LLMs or verify that the reviewer actually followed the staged protocol.
 
+## 5.1 Pilot regression checklist
+
+The first three-question pilot exposed semantic issues that syntax/schema checks cannot catch. Recheck these after regenerating candidates:
+
+- **Rain-drop equilibrium:** explicitly show `r=1 mm=10^-3 m` and `r^3=(10^-3 m)^3=10^-9 m^3`; include the full numerical chain for volume, mass, weight, and `|q|); explain why a charge magnitude below `mg/E` cannot balance gravity. Keep the millimetre-to-metre error (`10^9` impact) distinct from a cubic-power error (`10^6` impact).
+- **Charged particle in a magnetic field:** for a positive orbit radius, use `|q|vB=mv^2/R` and `R=mv/(|q|B)`, unless the notation explicitly defines `q` as charge magnitude. Check the same convention in angular velocity formulas. Do not copy a questionable OCR formula from the read-only official analysis into new teaching content.
+- **Capacitor with dielectric removed at constant voltage:** use the stated constraints directly: `E=U/d) stays constant when `U` and `d` stay constant; `C` decreases and `Q=CU` decreases. If discussing an alternative field expression involving charge and permittivity, track all changing variables together; do not call a formula invalid merely because one of its variables changes.
+
+These are candidate-review criteria, not automatic proof of correctness. A regenerated card remains a candidate until independent review evidence supports promotion.
+
 ## 6. Publication
 
 Only use the promotion script after generating real review evidence:
