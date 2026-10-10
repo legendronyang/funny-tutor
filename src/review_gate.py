@@ -35,7 +35,7 @@ LOGGER = logging.getLogger("funny_tutor.review_gate")
 def evaluate_review_file(input_path: Path, output_path: Path) -> dict[str, Any]:
     raw = json.loads(input_path.read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
-        raise ValueError("Review input must be a JSON object")
+        raise TypeError("Review input must be a JSON object")
 
     question_id = raw.get("question_id")
     canonical_answer = raw.get("canonical_answer")
@@ -47,12 +47,12 @@ def evaluate_review_file(input_path: Path, output_path: Path) -> dict[str, Any]:
     ):
         raise ValueError("canonical_answer must be a list of strings")
     if not isinstance(reviews, list):
-        raise ValueError("reviews must be a JSON array")
+        raise TypeError("reviews must be a JSON array")
 
     reports = []
     for index, item in enumerate(reviews):
         if not isinstance(item, dict):
-            raise ValueError(f"reviews[{index}] must be an object")
+            raise TypeError(f"reviews[{index}] must be an object")
         model = item.get("reviewer_model")
         answer = item.get("independent_answer")
         review = item.get("review")
@@ -61,7 +61,7 @@ def evaluate_review_file(input_path: Path, output_path: Path) -> dict[str, Any]:
         if not isinstance(answer, list) or not all(isinstance(v, str) for v in answer):
             raise ValueError(f"reviews[{index}].independent_answer must be string array")
         if not isinstance(review, dict):
-            raise ValueError(f"reviews[{index}].review must be an object")
+            raise TypeError(f"reviews[{index}].review must be an object")
         reports.append(build_review_report(
             question_id=question_id,
             reviewer_model=model,
