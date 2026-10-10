@@ -332,7 +332,7 @@ MVP 抽题策略：简单随机且当次不重复。
 - Always：
   - 在处理题库前必须使用 Pydantic 校验 JSON。
   - 写入 Markdown 时，所有 LaTeX 公式与物理专有名词必须直接来自 JSON，不经 LLM 修改。
-  - 执行 generate_vault.py 时，必须将 data/assets/ 的内容同步到 vault/FunnyTutor_EM_Vault/assets/，以保证 Obsidian 沙盒内可访问图片。
+  - 执行 generate_vault.py 时，必须将 data/assets/ 的内容同步到 vault/FunnyTutor_EM_Candidates/assets/，以保证 Obsidian 沙盒内可访问图片。
   - 对每道题，在决定是否调用 LLM 之前须检查对应 Markdown 题卡是否存在。若存在且未指定 --force，跳过该题 LLM 调用。
   - 所有 LLM 解析失败应仅跳过当前题目，并记录日志，不阻断整体流程。
 
@@ -390,3 +390,8 @@ LLM outputs are candidates, not trusted truth. Absolute correctness cannot be gu
 - `src/prompts/independent_solver.txt` and `src/prompts/review_gate.txt` define separate solver and reviewer contracts.
 - The current workflow is intentionally staged/manual: the CLI does not yet orchestrate provider calls, prove the solver was shown no reference answer, or establish statistical independence. The operator must preserve the independent solution before exposing reference material. Automated model orchestration, immutable provenance, and human-review UI are out of scope for this iteration.
 - The canonical source question, answer, and official analysis remain read-only. Candidate generation, review evidence, and publication decisions are separate artifacts.
+
+
+### Candidate and formal Vault separation
+
+The default `config.toml` output is `vault/FunnyTutor_EM_Candidates`. Generated cards are candidates and must not be treated as approved knowledge-bank entries. The formal destination remains `vault/FunnyTutor_EM_Vault`; promotion must use `src/publish_reviewed.py` with the matching ACCEPT decision artifact. Do not point the generation config directly at the formal Vault.
