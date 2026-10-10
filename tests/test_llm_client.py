@@ -200,3 +200,31 @@ def test_complete_json_rejects_invalid_generate_payload(
             user_prompt="Generate Funny Tutor fields.",
             mode="generate",
         )
+
+
+
+def test_complete_json_rejects_control_character_corrupting_latex(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_completion(**kwargs):
+        return SimpleNamespace(
+            choices=[SimpleNamespace(
+                message=SimpleNamespace(
+                    content='{"funny_explanation":"m=\\\\rho V\\\\r broken","memory_aids":["a"],"common_misconceptions":["b"]}'
+                )
+            )]
+        )
+
+    import src.llm_client as module
+    monkeypatch.setattr(module.litellm, "completion", fake_completion)
+    client = LLMClient(
+        LLMConfig(model="ollama_chat/qwen3.5:9b-opencode"),
+        "SYSTEM",
+    )
+
+    with pytest.raises(LLMResponseError, match="integrity check failed"):
+        client.complete_json(
+            question_id="em-control",
+            user_prompt="Generate Funny Tutor fields.",
+            mode="generate",
+        )
