@@ -19,6 +19,10 @@ def publish_reviewed_card(
     """Copy a candidate card only after validating matching ACCEPT evidence."""
     if not candidate_card.is_file():
         raise FileNotFoundError(f"Candidate card does not exist: {candidate_card}")
+    if candidate_card.stem != question_id:
+        raise ValueError("Candidate card filename stem does not match question_id")
+    if destination.stem != question_id:
+        raise ValueError("Destination filename stem does not match question_id")
     evidence: dict[str, Any] = json.loads(decision_file.read_text(encoding="utf-8"))
     decision = evidence.get("decision", {})
     if decision.get("question_id") != question_id:
@@ -35,6 +39,8 @@ def publish_reviewed_card(
         report for report in reports
         if isinstance(report, dict) and report.get("question_id") == question_id
     ]
+    if len(matching_reports) != len(reports):
+        raise ValueError("Publication blocked: evidence contains reports for another question")
     reviewers = {
         report.get("reviewer_model", "").strip().casefold()
         for report in matching_reports
