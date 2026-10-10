@@ -61,7 +61,9 @@ def test_load_llm_config_reads_local_ollama_chat_config() -> None:
 
 def test_load_system_prompt_contains_hard_constraints() -> None:
     prompt = load_system_prompt(Path("src/prompts/funny_tutor_em.txt"))
-    assert "绝不改写输入中的 LaTeX" in prompt
+    assert "Canonical 来源只读" in prompt
+    assert "新生成的教学内容独立负责准确性" in prompt
+    assert "JSON 字符串中的 LaTeX 必须正确转义" in prompt
     assert "独立求解后再验证" in prompt
     assert "一个合法 JSON 对象" in prompt
     assert "funny_explanation" in prompt
