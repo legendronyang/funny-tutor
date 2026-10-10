@@ -228,3 +228,28 @@
 ### Root-cause assessment
 
 The evidence points to a combination rather than a single cause: smaller local-model instruction-following limits; the fragility of asking one generation call to both create and self-audit prose; over-specific rules sharing one Prompt; and missing automated semantic/regression checks. The next improvement should be a layered quality gate and representative evaluation set, not an indefinitely longer Prompt.
+
+
+## Quality Gate v1 — Candidate, Review, Publish (2026-10-10)
+
+### Decision
+
+- Treat all LLM output as a candidate. No model confidence value is accepted as proof.
+- Separate deterministic text/schema checks from semantic physics review.
+- Require two distinct reviewer model identifiers for automatic ACCEPT; duplicate calls under the same model identifier do not count as independent reviewers.
+- A hard, evidence-backed FAIL in any review dimension results in REJECT. Missing reviewers, answer disagreement, canonical-answer mismatch, or any UNCERTAIN result results in REVIEW. Only all-PASS reports with independent answers matching the canonical answer can result in ACCEPT.
+- These states express evidence thresholds, not absolute correctness guarantees. Reviewer diversity is a heuristic; different model names do not prove statistical independence.
+
+### Implementation
+
+- `src/quality_gate.py`: rejects generated control characters other than LF and deterministically aggregates structured review reports.
+- `src/schema.py`: defines strict review check, independent solution, review report, and publication decision schemas.
+- `src/prompts/independent_solver.txt`: first-pass solve prompt that must be run before showing the reference answer or candidate content.
+- `src/prompts/review_gate.txt`: bounded structured reviewer prompt; asks for evidence and explicit PASS/FAIL/UNCERTAIN per dimension.
+- `src/review_gate.py`: validates saved review input and writes a machine-readable decision plus evidence.
+- `src/publish_reviewed.py`: promotes a staged Markdown card only if the matching decision is ACCEPT and its evidence contains at least two distinct reviewer IDs with all required checks PASS.
+- `src/llm_client.py`: rejects decoded generated text containing forbidden control characters before it reaches the renderer. This catches JSON escapes such as an unescaped `\\r` becoming a carriage return, but it does not replace review of LaTeX semantics.
+
+### Operational boundary
+
+The current CLI aggregates saved review evidence; it does not automatically call two models or guarantee that the first-pass solver and reviewer stages were executed in the required order. The operator must preserve the first-pass result before giving the same reviewer access to canonical answer/analysis or candidate content. Model orchestration and provenance are future work. Generated cards remain staged candidates until explicitly promoted.
