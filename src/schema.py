@@ -6,7 +6,7 @@ rejected at the project boundary instead of being silently coerced.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -72,3 +72,73 @@ class EMQuestion(BaseModel):
     memory_aids: list[str] = Field(default_factory=list)
     funny_quick_tip: str | None = None
     common_misconceptions: list[str] = Field(default_factory=list)
+
+
+
+ReviewStatus = Literal["PASS", "FAIL", "UNCERTAIN"]
+PublicationStatus = Literal["ACCEPT", "REVIEW", "REJECT"]
+AnswerMatchStatus = Literal["MATCH", "MISMATCH", "UNCERTAIN"]
+
+
+class ReviewCheck(BaseModel):
+    """One auditable content-review result; PASS requires concrete evidence."""
+
+    model_config = ConfigDict(strict=True, extra="forbid")
+
+    status: ReviewStatus
+    evidence: list[str] = Field(min_length=1)
+    issues: list[str] = Field(default_factory=list)
+
+
+class IndependentSolutionPayload(BaseModel):
+    """A reviewer model's first-pass solution before seeing the reference answer."""
+
+    model_config = ConfigDict(strict=True, extra="forbid")
+
+    answer: list[str] = Field(min_length=1)
+    reasoning: list[str] = Field(min_length=1)
+    uncertainties: list[str] = Field(default_factory=list)
+
+
+class ReviewReportPayload(BaseModel):
+    """Structured review of a candidate, after an independent first-pass solution."""
+
+    model_config = ConfigDict(strict=True, extra="forbid")
+
+    answer_correctness: ReviewCheck
+    physics_reasoning: ReviewCheck
+    formula_units: ReviewCheck
+    numerical_consistency: ReviewCheck
+    student_clarity: ReviewCheck
+    latex_integrity: ReviewCheck
+    issues: list[str] = Field(default_factory=list)
+
+
+class ReviewReport(BaseModel):
+    """Auditable review report enriched by the application, not by model assertions."""
+
+    model_config = ConfigDict(strict=True, extra="forbid")
+
+    question_id: str
+    reviewer_model: str
+    independent_answer: list[str] = Field(min_length=1)
+    canonical_answer_match: AnswerMatchStatus
+    answer_correctness: ReviewCheck
+    physics_reasoning: ReviewCheck
+    formula_units: ReviewCheck
+    numerical_consistency: ReviewCheck
+    student_clarity: ReviewCheck
+    latex_integrity: ReviewCheck
+    issues: list[str] = Field(default_factory=list)
+
+
+class PublicationDecision(BaseModel):
+    """Final deterministic release decision; model confidence is not a release input."""
+
+    model_config = ConfigDict(strict=True, extra="forbid")
+
+    question_id: str
+    decision: PublicationStatus
+    distinct_reviewers: int = Field(ge=0)
+    reasons: list[str] = Field(min_length=1)
+    compared_answer: list[str] = Field(default_factory=list)
