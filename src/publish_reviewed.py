@@ -59,12 +59,19 @@ def publish_reviewed_card(
     for report in matching_reports:
         if report.get("canonical_answer_match") != "MATCH":
             raise ValueError("Publication blocked: independent answer did not match canonical answer")
+        if report.get("issues"):
+            raise ValueError("Publication blocked: reviewer reported unresolved issues")
         for check_name in required_checks:
             check = report.get(check_name)
             if not isinstance(check, dict) or check.get("status") != "PASS":
                 raise ValueError(
                     f"Publication blocked: {report.get('reviewer_model')} "
                     f"did not pass {check_name}"
+                )
+            if check.get("issues"):
+                raise ValueError(
+                    f"Publication blocked: {report.get('reviewer_model')} "
+                    f"has unresolved issues in {check_name}"
                 )
 
     destination.parent.mkdir(parents=True, exist_ok=True)
