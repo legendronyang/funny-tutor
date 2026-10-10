@@ -14,8 +14,26 @@ def test_only_matching_accept_decision_can_publish(tmp_path: Path) -> None:
     candidate = tmp_path / "candidate.md"
     candidate.write_text("# Candidate", encoding="utf-8")
     evidence = tmp_path / "decision.json"
+    passed = {
+        "status": "PASS",
+        "evidence": ["具体推导证据"],
+        "issues": [],
+    }
+    report = {
+        "question_id": "q1",
+        "reviewer_model": "provider/model-a",
+        "canonical_answer_match": "MATCH",
+        **{
+            key: passed for key in (
+                "answer_correctness", "physics_reasoning", "formula_units",
+                "numerical_consistency", "student_clarity", "latex_integrity"
+            )
+        },
+    }
+    report_b = {**report, "reviewer_model": "provider/model-b"}
     evidence.write_text(json.dumps({
-        "decision": {"question_id": "q1", "decision": "ACCEPT"}
+        "decision": {"question_id": "q1", "decision": "ACCEPT"},
+        "reports": [report, report_b],
     }), encoding="utf-8")
     destination = tmp_path / "formal" / "q1.md"
 
