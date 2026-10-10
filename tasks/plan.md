@@ -253,3 +253,6 @@ The evidence points to a combination rather than a single cause: smaller local-m
 ### Operational boundary
 
 The current CLI aggregates saved review evidence; it does not automatically call two models or guarantee that the first-pass solver and reviewer stages were executed in the required order. The operator must preserve the first-pass result before giving the same reviewer access to canonical answer/analysis or candidate content. Model orchestration and provenance are future work. Generated cards remain staged candidates until explicitly promoted.
+
+
+- **Default-path safeguard:** `config.toml` now writes generated cards to `vault/FunnyTutor_EM_Candidates`, not the formal `vault/FunnyTutor_EM_Vault`. The explicit publisher is the intended promotion path.
