@@ -118,6 +118,11 @@ def decide_publication(
     failed_checks: list[str] = []
     uncertain_checks: list[str] = []
     for report in matching_reports:
+        if report.issues:
+            uncertain_checks.append(
+                f"{report.reviewer_model}: reviewer reported unresolved issues: "
+                + "; ".join(report.issues)
+            )
         for dimension in REVIEW_DIMENSIONS:
             check = getattr(report, dimension)
             if check.status == "FAIL":
@@ -127,6 +132,11 @@ def decide_publication(
                 )
             elif check.status == "UNCERTAIN":
                 uncertain_checks.append(f"{report.reviewer_model}: {dimension} is uncertain.")
+            elif check.issues:
+                uncertain_checks.append(
+                    f"{report.reviewer_model}: {dimension} has unresolved issues: "
+                    + "; ".join(check.issues)
+                )
 
     normalized_answers = {
         _normalize_answer(report.independent_answer)
