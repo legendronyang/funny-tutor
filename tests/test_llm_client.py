@@ -210,7 +210,7 @@ def test_complete_json_rejects_control_character_corrupting_latex(
         return SimpleNamespace(
             choices=[SimpleNamespace(
                 message=SimpleNamespace(
-                    content='{"funny_explanation":"m=\\\\rho V\\\\r broken","memory_aids":["a"],"common_misconceptions":["b"]}'
+                    content = '{"funny_explanation":"m=' + chr(92) + 'rho V","memory_aids":["a"],"common_misconceptions":["b"]}'
                 )
             )]
         )
