@@ -130,7 +130,7 @@ def generate_vault(
     paths = config.get("paths", {})
     questions_path = PROJECT_ROOT / paths.get("questions_json", "data/questions_em.json")
     assets_dir = PROJECT_ROOT / paths.get("assets_dir", "data/assets")
-    vault_dir = PROJECT_ROOT / paths.get("vault_dir", "vault/FunnyTutor_EM_Vault")
+    vault_dir = PROJECT_ROOT / paths.get("vault_dir", "vault/FunnyTutor_EM_Candidates")
     daily_count = int(config.get("daily", {}).get("count", 3))
 
     questions = _load_questions(questions_path)
