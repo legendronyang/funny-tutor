@@ -11,7 +11,7 @@ from src.publish_reviewed import publish_reviewed_card
 
 
 def test_only_matching_accept_decision_can_publish(tmp_path: Path) -> None:
-    candidate = tmp_path / "candidate.md"
+    candidate = tmp_path / "q1.md"
     candidate.write_text("# Candidate", encoding="utf-8")
     evidence = tmp_path / "decision.json"
     passed = {
