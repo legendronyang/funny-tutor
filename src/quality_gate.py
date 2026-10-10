@@ -12,7 +12,6 @@ try:
     from .schema import (
         PublicationDecision,
         ReviewReport,
-        ReviewStatus,
     )
 except ImportError:  # pragma: no cover - supports direct script execution
     from schema import PublicationDecision, ReviewReport, ReviewStatus
