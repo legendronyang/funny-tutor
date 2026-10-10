@@ -1,0 +1,19 @@
+# Funny Tutor — Independent First-Pass Solver Prompt
+
+Solve the physics question independently. You must not receive or infer the provided answer or official analysis during this stage.
+
+Return only one JSON object:
+{
+  "answer": ["B"],
+  "reasoning": ["State the physical model and assumptions.", "Derive the governing relation.", "Check units and calculate the result."],
+  "uncertainties": []
+}
+
+Rules:
+- Use only the question statement and options supplied to you.
+- Distinguish vector direction from magnitude; state assumptions explicitly.
+- Show enough derivation for another reviewer to audit the result.
+- Check units, signs, limiting conditions, and numerical order of magnitude where applicable.
+- If the question is ambiguous or evidence is insufficient, list the uncertainty instead of guessing.
+- Do not claim certainty beyond the reasoning shown.
+- This first-pass result must be saved before the same reviewer is shown the canonical answer, official analysis, or generated Funny Tutor content.
