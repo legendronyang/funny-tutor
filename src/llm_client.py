@@ -73,7 +73,7 @@ def validate_funny_payload(
 ) -> FunnyTutorPayload:
     """Validate the strict Generate payload before it reaches the renderer."""
     try:
-        return FunnyTutorPayload.model_validate(payload)
+        validated = FunnyTutorPayload.model_validate(payload)
     except ValidationError as exc:
         raise LLMResponseError(
             question_id,
@@ -87,6 +87,8 @@ def validate_funny_payload(
             question_id,
             f"generated text integrity check failed: {exc}",
         ) from exc
+
+    return validated
 
 
 @dataclass(frozen=True)
