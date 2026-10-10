@@ -50,7 +50,7 @@ def test_only_matching_accept_decision_can_publish(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("decision", ["REVIEW", "REJECT", None])
 def test_review_or_reject_decision_cannot_publish(tmp_path: Path, decision: str | None) -> None:
-    candidate = tmp_path / "candidate.md"
+    candidate = tmp_path / "q1.md"
     candidate.write_text("# Candidate", encoding="utf-8")
     evidence = tmp_path / "decision.json"
     evidence.write_text(json.dumps({
@@ -70,7 +70,7 @@ def test_review_or_reject_decision_cannot_publish(tmp_path: Path, decision: str 
 
 
 def test_decision_for_another_question_cannot_publish(tmp_path: Path) -> None:
-    candidate = tmp_path / "candidate.md"
+    candidate = tmp_path / "q1.md"
     candidate.write_text("# Candidate", encoding="utf-8")
     evidence = tmp_path / "decision.json"
     evidence.write_text(json.dumps({
