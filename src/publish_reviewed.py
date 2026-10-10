@@ -34,7 +34,7 @@ def publish_reviewed_card(
 
     reports = evidence.get("reports")
     if not isinstance(reports, list):
-        raise ValueError("Decision evidence is missing the structured review reports")
+        raise TypeError("Decision evidence field 'reports' must be a list")
     matching_reports = [
         report for report in reports
         if isinstance(report, dict) and report.get("question_id") == question_id
