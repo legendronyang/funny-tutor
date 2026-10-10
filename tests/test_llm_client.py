@@ -71,6 +71,10 @@ def test_load_system_prompt_contains_hard_constraints() -> None:
     assert "common_misconceptions" in prompt
     assert "knowledge_main" in prompt
     assert "只生成 Funny Tutor 展示层字段" in prompt
+    assert "带电粒子在匀强磁场中的轨道半径须使用电荷量大小" in prompt
+    assert "`R=mv/(|q|B)`" in prompt
+    assert "不要因为某个公式含有正在变化的变量，就直接宣称该公式不能使用" in prompt
+    assert "把 `(10^-3)^3` 错算成 `10^-3`" in prompt
 
 
 def test_complete_json_uses_ollama_thinking_policy(
