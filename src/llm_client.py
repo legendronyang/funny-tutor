@@ -80,6 +80,14 @@ def validate_funny_payload(
             f"invalid Generate payload: {exc}",
         ) from exc
 
+    try:
+        validate_generated_payload_text(payload)
+    except ValueError as exc:
+        raise LLMResponseError(
+            question_id,
+            f"generated text integrity check failed: {exc}",
+        ) from exc
+
 
 @dataclass(frozen=True)
 class LLMConfig:
