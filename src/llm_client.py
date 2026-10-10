@@ -14,11 +14,11 @@ from dotenv import load_dotenv
 from pydantic import ValidationError
 
 try:
-    from .schema import FunnyTutorPayload
     from .quality_gate import validate_generated_payload_text
+    from .schema import FunnyTutorPayload
 except ImportError:  # pragma: no cover - supports direct script execution
-    from schema import FunnyTutorPayload
     from quality_gate import validate_generated_payload_text
+    from schema import FunnyTutorPayload
 
 GenerationMode = Literal["generate", "verify"]
 
