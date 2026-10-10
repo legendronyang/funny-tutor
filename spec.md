@@ -359,3 +359,34 @@ MVP 抽题策略：简单随机且当次不重复。
 
 1. 如果同一道真题在源 JSON 中更新了 `analysis_official` 字段的内容，当前的“检测文件是否存在即跳过”的简单增量构建策略是否足够？未来是否需要引入文件 Hash 比对机制来触发更新？（MVP 阶段暂维持简单判断，后续迭代考虑加入 hash 校验）。
 2. `knowledge_tree_path` 层级改变时，是否需要脚本提供自动清理 Obsidian 内部旧目录（孤儿文件）的机制？（MVP 阶段由人工在 Obsidian 内删除旧文件解决）。
+
+## Quality Gate and Publication Policy (v1)
+
+### Design principle
+
+LLM outputs are candidates, not trusted truth. Absolute correctness cannot be guaranteed by prompting or by model agreement. The system therefore uses explicit evidence thresholds and conservative release states rather than a model confidence score.
+
+### Stages
+
+1. Generate a candidate payload under the existing strict FunnyTutorPayload schema.
+2. Run deterministic integrity checks. Reject non-LF ASCII control characters in generated strings before rendering; JSON/Schema success alone is not content correctness.
+3. Run an independent first-pass solution without exposing the canonical answer or official analysis to that solver.
+4. Save that result, then ask a reviewer to inspect the candidate and reference material with structured evidence across answer correctness, physics reasoning, formulas/units, numerical consistency, student clarity, and LaTeX integrity.
+5. Aggregate at least two distinct reviewer model identifiers. The application computes answer comparison; the model does not self-assert a match.
+6. Promote a staged Markdown card only when the decision evidence is ACCEPT.
+
+### Publication states
+
+- ACCEPT: at least two distinct reviewer identifiers; all checks PASS with evidence; independent answers agree with each other and match the canonical answer; no unresolved issues.
+- REVIEW: insufficient reviewers, disagreement, canonical-answer conflict, or any UNCERTAIN check.
+- REJECT: a reviewer identifies an explicit, evidence-backed failure in a required dimension.
+- These are workflow states, not a proof of absolute correctness. Model names alone cannot prove independence; human review remains appropriate for conflicts and high-impact uncertainty.
+
+### Implementation and limitations
+
+- `src/quality_gate.py` implements deterministic text integrity checks and the conservative decision function.
+- `src/review_gate.py` validates saved structured reports and writes decision evidence.
+- `src/publish_reviewed.py` blocks promotion unless the decision is ACCEPT and its attached reports contain two distinct reviewer identifiers, MATCH status, and all required checks PASS.
+- `src/prompts/independent_solver.txt` and `src/prompts/review_gate.txt` define separate solver and reviewer contracts.
+- The current workflow is intentionally staged/manual: the CLI does not yet orchestrate provider calls, prove the solver was shown no reference answer, or establish statistical independence. The operator must preserve the independent solution before exposing reference material. Automated model orchestration, immutable provenance, and human-review UI are out of scope for this iteration.
+- The canonical source question, answer, and official analysis remain read-only. Candidate generation, review evidence, and publication decisions are separate artifacts.
