@@ -14,7 +14,7 @@ try:
         ReviewReport,
     )
 except ImportError:  # pragma: no cover - supports direct script execution
-    from schema import PublicationDecision, ReviewReport, ReviewStatus
+    from schema import PublicationDecision, ReviewReport
 
 
 REVIEW_DIMENSIONS = (
