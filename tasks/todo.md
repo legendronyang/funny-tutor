@@ -264,3 +264,27 @@ Prompt 修改提交：`241be98c882715847c46c266e0a1ed80aabe9148`。
 - [ ] Pilot 通过后再生成其余题目；每题仅生成一次，按固定 rubric 逐题验收，失败项进入人工复核，不自动无限重试。
 
 Prompt 冻结候选提交：`7715fb8c92076e6786cf5c5801168deec92aad67`；防无限迭代评审记录：`40e3f71c89c9b6bd46caab2014abfaa5bdef5edf`。
+
+
+## Task 8: Evidence-based Content Quality Gate and Controlled Publication
+
+**Goal:** Treat model output as candidate content. Add deterministic integrity checks, independent solver/reviewer contracts, conservative aggregation, and a publication step that refuses candidates without ACCEPT evidence.
+
+**Implemented in code (remote branch; tests still require local execution):**
+- [x] Add strict Pydantic schemas for independent solution, dimension-level review checks, review reports, and publication decisions.
+- [x] Reject decoded control characters in generated text before rendering; LF paragraph breaks remain allowed.
+- [x] Add independent-solver and reviewer prompts; reviewers must provide evidence per check and can mark UNCERTAIN.
+- [x] Add a CLI to aggregate saved review evidence into ACCEPT / REVIEW / REJECT.
+- [x] Add a promotion CLI requiring ACCEPT evidence, matching question ID, at least two distinct reviewer identifiers, MATCH status, and all required dimensions PASS.
+- [x] Document that model agreement is evidence, not proof, and that reviewer-name diversity does not prove independence.
+- [x] Add unit tests for control-character checks, reviewer aggregation, uncertainty, answer disagreement, and publication blocking.
+
+**Verification required on the user's WSL environment:**
+- [ ] Run `ruff check src tests`.
+- [ ] Run `pytest tests/ -v`.
+- [ ] Inspect the malformed JSON regression fixture and confirm it produces a decoded CR and is rejected.
+- [ ] Use a known passing and a known failing review JSON fixture with `python src/review_gate.py --input ... --output ...`.
+- [ ] Confirm `src/publish_reviewed.py` refuses REVIEW/REJECT evidence and only promotes ACCEPT evidence.
+- [ ] Rerun the three-question Pilot through candidate generation and manual/model review; do not promote any existing card until a fresh decision artifact exists.
+
+**Known limitation:** Review aggregation is implemented, but provider orchestration and trusted provenance are not. A human/operator must ensure independent solving is run before the reference answer is revealed, and must use genuinely distinct reviewer setups. No quality gate guarantees absolute correctness.
