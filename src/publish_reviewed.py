@@ -27,6 +27,40 @@ def publish_reviewed_card(
         raise ValueError(
             f"Publication blocked: decision is {decision.get('decision')!r}, not 'ACCEPT'"
         )
+
+    reports = evidence.get("reports")
+    if not isinstance(reports, list):
+        raise ValueError("Decision evidence is missing the structured review reports")
+    matching_reports = [
+        report for report in reports
+        if isinstance(report, dict) and report.get("question_id") == question_id
+    ]
+    reviewers = {
+        report.get("reviewer_model", "").strip().casefold()
+        for report in matching_reports
+        if isinstance(report.get("reviewer_model"), str)
+    }
+    if len(reviewers) < 2:
+        raise ValueError("Publication blocked: evidence must contain two distinct reviewers")
+    required_checks = (
+        "answer_correctness",
+        "physics_reasoning",
+        "formula_units",
+        "numerical_consistency",
+        "student_clarity",
+        "latex_integrity",
+    )
+    for report in matching_reports:
+        if report.get("canonical_answer_match") != "MATCH":
+            raise ValueError("Publication blocked: independent answer did not match canonical answer")
+        for check_name in required_checks:
+            check = report.get(check_name)
+            if not isinstance(check, dict) or check.get("status") != "PASS":
+                raise ValueError(
+                    f"Publication blocked: {report.get('reviewer_model')} "
+                    f"did not pass {check_name}"
+                )
+
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(candidate_card, destination)
     return destination
