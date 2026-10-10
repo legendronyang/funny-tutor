@@ -15,8 +15,10 @@ from pydantic import ValidationError
 
 try:
     from .schema import FunnyTutorPayload
+    from .quality_gate import validate_generated_payload_text
 except ImportError:  # pragma: no cover - supports direct script execution
     from schema import FunnyTutorPayload
+    from quality_gate import validate_generated_payload_text
 
 GenerationMode = Literal["generate", "verify"]
 
