@@ -32,7 +32,7 @@ The three-question Qwen pilot is **not content-approved**. Two generated cards s
 - **Evidence:** The generator writes a card only after validation and rendering, so a failed `--force` run can leave the previous card at its normal path. The pilot then still showed a capacitor Markdown file even though the current run failed for that question.
 - **Impact:** A stale candidate can be mistaken for fresh output.
 - **Change made:** `src/generate_vault.py` now archives an existing card under `.stale_candidates/` if forced regeneration fails and builds the dashboard only from successfully generated or intentionally skipped cards. A regression test was added to `tests/test_generate_vault.py`.
-- **Status:** Code and test committed; **local Ruff/pytest must be rerun after pulling this change**. This change reduces stale-card confusion but does not make a generated card semantically correct.
+- **Status:** Code and test committed; **user's latest post-pull run confirms Ruff PASS and 83 pytest tests PASS**, including the stale-card regression test. This change reduces stale-card confusion but does not make a generated card semantically correct.
 
 ## P1 — 1.0 workflow completeness / usability
 
@@ -93,8 +93,8 @@ The three-question Qwen pilot is **not content-approved**. Two generated cards s
 
 ## 1.0 exit checklist
 
-- [ ] Latest `ruff check src tests` passes after the stale-card safeguard change.
-- [ ] Latest `pytest tests/ -v` passes, including forced-generation failure archival.
+- [x] Latest `ruff check src tests` passes after the stale-card safeguard change (user-provided log).
+- [x] Latest `pytest tests/ -v` passes, including forced-generation failure archival (83 passed in 3.11s per user-provided log).
 - [ ] Small end-to-end generation succeeds with a known-good response; dashboard links only to active cards.
 - [ ] Second non-force run skips existing cards without LLM calls.
 - [ ] Force failure archives stale content and does not present it as fresh.
