@@ -56,7 +56,7 @@
 ### Checkpoint: Complete
 - [x] 增量生成逻辑有自动化测试，二次运行跳过已有卡片且不调用 LLM。
 - [ ] 生成的 Vault 在 Obsidian 中图片加载与公式渲染正常。
-- [ ] 测试与静态检查曾在用户本地通过；最新新增的强制重生成失败归档测试尚待本地复跑。
+- [x] 用户在拉取最新分支后运行 `ruff check src tests` 与 `pytest tests/ -v`，均通过；83 tests passed，其中包含强制重生成失败归档测试。
 
 ## LLM Verification Contract
 
@@ -267,7 +267,7 @@ This section supersedes earlier historical checklist entries where their status 
 | Task 2 — LiteLLM client and Generate/Verify mode | Complete as a client abstraction | Local Qwen Verify A/B evidence is recorded; provider comparison is not run | Complete for 1.0 pipeline |
 | Task 3 — Markdown renderer | Complete | Renderer tests exist; real Obsidian formula/image display not yet signed off | Implemented; GUI check deferred |
 | Task 4 — Daily index | Complete | Unit tests cover uniqueness, bounds, and rendering | Complete |
-| Task 5 — Pipeline, assets, incremental/force | Implemented | Integration tests cover generate, skip, force, failure continuation, dry-run; stale-card failure case added in latest change and awaits local test | Implemented; run latest regression suite |
+| Task 5 — Pipeline, assets, incremental/force | Implemented | Integration tests cover generate, skip, force, failure continuation, dry-run; stale-card failure case added in latest change; user reports 83 local tests pass including this case | Implemented; run latest regression suite |
 | Task 6 — Legacy to Canonical import | Complete for current fixture | Prior local evidence: 10 records converted, dry-run succeeded; annotation placeholders remain | Complete as adapter, not curated data |
 | Task 7 — Strict Generate output contract | Structural implementation complete | Real Qwen pilot has at least one malformed-text rejection and two content-level defects | Pipeline contract complete; content defects moved to tech debt |
 | Task 8 — Review evidence and publication | CLI/schema/prompt/tests implemented | Operator-run review CLI/publisher fixtures and real reviewed publication are not yet evidenced | Manual release workflow; validation remains |
