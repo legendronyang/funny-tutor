@@ -5,7 +5,7 @@ Scope: evidence-based debt found while tracing `idea.md` → `spec.md` → `task
 
 ## Executive summary
 
-The engineering path is largely implemented: canonical schema/import, configurable LiteLLM client, strict Generate payload, Markdown renderer, daily dashboard, incremental/force pipeline, deterministic text-integrity gate, and a manual review/publish boundary exist. The user reports `ruff check src tests` and `pytest tests/ -v` pass on the local branch before the newest stale-card regression change.
+The engineering path is largely implemented: canonical schema/import, configurable LiteLLM client, strict Generate payload, Markdown renderer, daily dashboard, incremental/force pipeline, deterministic text-integrity gate, and a manual review/publish boundary exist. The user reports `ruff check src tests` PASS and `pytest tests/ -v` with 85 passed in 6.03s after the LaTeX recovery change. A newer Gemini 3 temperature compatibility change and its regression test have since been committed and still require local validation.
 
 The three-question Qwen pilot is **not content-approved**. Two generated cards still have material physics-content defects, and the capacitor card's latest forced generation was rejected because JSON decoding produced control characters. This is tracked as content/runtime debt, not a reason to endlessly extend the shared Prompt.
 
@@ -66,16 +66,16 @@ The three-question Qwen pilot is **not content-approved**. Two generated cards s
 ### TD-008 — Real Obsidian rendering and asset verification are not signed off
 
 - **Implemented:** Renderer emits callouts, tags, knowledge links, and relative asset references; the pipeline copies assets into the Vault.
-- **Gap:** Automated string tests do not prove that all formulas, callouts, links, and image paths display correctly in the actual Obsidian app.
-- **Next action:** Open the candidate Vault and check at least one card with images and LaTeX. The current three-question pilot may not cover image rendering.
+- **Evidence:** User confirms all three cards open and display correctly in the Windows-local Candidates Vault, including formula rendering.
+- **Remaining gap:** Image rendering in a card with actual image references is not yet evidenced; the current pilot may not cover image rendering.
 
 ## P2 — Model comparison and evaluation
 
 ### TD-009 — No fixed cross-model benchmark/report yet
 
 - **Goal:** Compare local `qwen3.5:9b-opencode` against cloud Gemini, ChatGPT and DeepSeek using the same source questions and frozen prompts.
-- **Gap:** The project has no single persisted experiment matrix with model/version, parameters, latency, parse/integrity outcome, content rubric, and final review decision.
-- **Next action:** Use a fixed representative set (at least the three pilot cases), save every model output separately, and compare against one rubric. Do not overwrite canonical data or one model's output with another's.
+- **Change made:** `docs/model-comparison-v1.md` freezes the three-question protocol and rubric; `experiments/model-comparison-v1/results.csv` adds a separate row per question/provider.
+- **Remaining gap:** Qwen output snapshot, provider credential availability, cloud runs, latency/cost capture, and content-review scores are still pending. Do not overwrite canonical data or one model's output with another's.
 
 ### TD-010 — Prompt-specific rules and semantic checks remain partly manual
 
@@ -99,7 +99,8 @@ The three-question Qwen pilot is **not content-approved**. Two generated cards s
 - [ ] Second non-force run skips existing cards without LLM calls.
 - [ ] Force failure archives stale content and does not present it as fresh.
 - [ ] Review CLI and publish CLI are exercised with pass and fail evidence.
-- [ ] Candidate Vault is opened in Obsidian; LaTeX, callouts, links, and image paths are manually checked.
-- [ ] Fixed cross-model experiment set and rubric are prepared; no further open-ended shared-Prompt tuning.
+- [x] Candidate Vault is opened in Obsidian; user confirms all three cards display. Images should be checked when an image-bearing question is included.
+- [x] Fixed cross-model experiment set and rubric are prepared in `docs/model-comparison-v1.md`; no further open-ended shared-Prompt tuning.
+- [ ] Validate the latest Gemini 3 temperature compatibility code and test locally before cloud calls.
 
 **Release language:** Passing this checklist closes the pipeline-focused engineering milestone. It does not certify every model-generated explanation or turn placeholder records into curated educational content.
