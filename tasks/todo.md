@@ -16,7 +16,7 @@ It does **not** claim that every generated explanation is physically correct, th
 | Task 2 — LiteLLM client and Generate/Verify contract | DONE for pipeline | `src/llm_client.py`; mock tests and local Qwen Verify A/B log; cloud comparison deferred |
 | Task 3 — Obsidian Markdown renderer | IMPLEMENTED | `src/markdown_renderer.py`; renderer tests; manual Obsidian formula/image inspection remains |
 | Task 4 — Daily dashboard selection | DONE | `src/daily_index.py`; unique selection, bounds and Markdown tests |
-| Task 5 — Pipeline, assets, incremental/force behavior | IMPLEMENTED | `src/generate_vault.py`; pipeline tests; new stale-card-on-force-failure regression test needs local execution |
+| Task 5 — Pipeline, assets, incremental/force behavior | IMPLEMENTED | `src/generate_vault.py`; pipeline tests; new stale-card-on-force-failure regression test passes in the user's latest local suite |
 | Task 6 — Legacy import to Canonical JSON | DONE for current fixture | `src/import_questions.py`; prior local conversion of 10 records; annotations are explicit placeholders, not curated metadata |
 | Task 7 — Strict Generate payload | DONE structurally | Pydantic + Ollama JSON Schema + control-character gate; semantic content still requires review |
 | Task 8 — Evidence-based review and controlled publish | IMPLEMENTED, operator-driven | `src/review_gate.py`, `src/publish_reviewed.py`; real CLI/publish walkthrough still required |
