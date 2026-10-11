@@ -29,6 +29,18 @@ def test_parse_json_response_accepts_common_wrappers() -> None:
         assert parse_json_response(raw, "em-001") == expected
 
 
+def test_parse_json_response_repairs_common_unescaped_latex_commands() -> None:
+    raw = String.raw`{"funny_explanation":"$\\frac{1}{2}$ and $\\rho V$, plus \\text{unit}"} `
+    parsed = parse_json_response(raw, "em-latex-repair")
+    assert parsed["funny_explanation"] == r"$\frac{1}{2}$ and $\rho V$, plus \text{unit}"
+
+
+def test_parse_json_response_preserves_already_escaped_latex_commands() -> None:
+    raw = String.raw`{"funny_explanation":"$\\\\frac{1}{2}$"} `
+    parsed = parse_json_response(raw, "em-latex-valid")
+    assert parsed["funny_explanation"] == r"$\frac{1}{2}$"
+
+
 def test_parse_json_response_rejects_invalid_content_with_question_id() -> None:
     with pytest.raises(LLMResponseError, match="em-001"):
         parse_json_response("not json at all", "em-001")
@@ -216,7 +228,7 @@ def test_complete_json_rejects_control_character_corrupting_latex(
         return SimpleNamespace(
             choices=[SimpleNamespace(
                 message=SimpleNamespace(
-                    content = '{"funny_explanation":"m=' + chr(92) + 'rho V","memory_aids":["a"],"common_misconceptions":["b"]}'
+                    content = '{"funny_explanation":"m=' + chr(92) + 'tbroken","memory_aids":["a"],"common_misconceptions":["b"]}'
                 )
             )]
         )
