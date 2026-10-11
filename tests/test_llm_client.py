@@ -158,6 +158,41 @@ def test_complete_json_uses_ollama_thinking_policy(
     assert "provided answer as a reasoning premise" in verify_call["messages"][1]["content"]
 
 
+def test_gemini_3_generate_does_not_receive_temperature(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict = {}
+
+    def fake_completion(**kwargs):
+        captured.update(kwargs)
+        return SimpleNamespace(
+            choices=[SimpleNamespace(
+                message=SimpleNamespace(content=(
+                    '{"funny_explanation":"解释","memory_aids":["记忆"],'
+                    '"common_misconceptions":["易错点"]}'
+                ))
+            )]
+        )
+
+    import src.llm_client as module
+    monkeypatch.setattr(module.litellm, "completion", fake_completion)
+
+    client = LLMClient(
+        LLMConfig(model="gemini/gemini-3.8-flash", api_key_env=None, temperature=0.0),
+        "SYSTEM",
+    )
+    result = client.complete_json(
+        question_id="gemini-3",
+        user_prompt="Generate Funny Tutor fields.",
+        mode="generate",
+    )
+
+    assert result["funny_explanation"] == "解释"
+    assert captured["model"] == "gemini/gemini-3.8-flash"
+    assert "temperature" not in captured
+    assert "think" not in captured
+
+
 def test_non_ollama_model_does_not_receive_ollama_think_kwarg(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
