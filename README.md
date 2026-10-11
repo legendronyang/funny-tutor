@@ -12,6 +12,8 @@ The user has confirmed local `ruff check src tests` and `pytest tests/ -v` passe
 - Requirements and implementation traceability: [spec.md](spec.md)
 - Detailed implementation history and decisions: [tasks/plan.md](tasks/plan.md)
 - Known limitations, failures and 1.0 exit criteria: [tech-debt.md](tech-debt.md)
+- Frozen three-question cross-model benchmark protocol: [docs/model-comparison-v1.md](docs/model-comparison-v1.md)
+- Comparison results matrix (one row per question/model): [experiments/model-comparison-v1/results.csv](experiments/model-comparison-v1/results.csv)
 
 ## Run locally
 
