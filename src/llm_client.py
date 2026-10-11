@@ -281,7 +281,15 @@ class LLMClient:
             kwargs["api_key"] = api_key
 
         if mode == "generate":
-            kwargs["temperature"] = self.config.temperature
+            model_lower = self.config.model.lower()
+            # Gemini 3 models no longer accept legacy sampling parameters such
+            # as temperature. Keep this provider-family compatibility rule in
+            # the client rather than leaking it into generation/pipeline code.
+            is_gemini_3 = model_lower.startswith("gemini/") and (
+                model_lower.split("/", 1)[1].startswith("gemini-3")
+            )
+            if not is_gemini_3:
+                kwargs["temperature"] = self.config.temperature
 
         # Ollama's chat endpoint exposes Qwen thinking as the 'think' parameter.
         # Keep this provider-specific mapping inside the client so upper layers
