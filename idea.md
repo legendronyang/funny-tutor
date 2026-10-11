@@ -49,3 +49,15 @@
 - 不引入复杂插件依赖（如 Dataview 驱动 UI）：尽量让生成的 Markdown 在“纯文本 + Obsidian 原生特性”下即可良好工作，减少环境差异带来的调试成本。
 - 不让 AI 主动推导复杂计算过程：电磁感应和交流电中的定量推导仍依赖权威解析或人工编写，LLM 只负责翻译与重构语言，以避免在推导细节上产生不可控幻觉。
 - 不一次性扩展到全学科、多端同步：MVP 只服务高二电磁学，默认单机或家庭级 Vault；跨设备同步交由 Obsidian 自身或网盘解决，后续如果验证价值再考虑 Web 端或多用户协作。
+
+## 1.0 Scope Reconciliation (2026-10-11)
+
+The first 1.0 milestone is the **end-to-end candidate-generation workflow**, not a claim that every generated physics explanation is publication-ready. The initial concept remains the product direction: Canonical JSON is the source of truth; Python + LiteLLM builds Obsidian-native Markdown; the daily dashboard lowers the cost of starting a study session.
+
+For this milestone:
+- In scope: canonical question import/validation, configurable LLM call, strict response schema, candidate Markdown rendering, local asset copying, daily dashboard, incremental skip/force behavior, and a documented/manual review-to-publish boundary.
+- Explicitly not a 1.0 exit requirement: 20 curated questions, OCR capture automation, measured learning-retention improvement, automatic semantic correctness, automatic cloud-model comparison, or a polished Obsidian theme.
+- Generated content remains a candidate. Syntax tests and successful file generation do not establish physics correctness.
+- The original idea says the LLM should be a language/memory amplifier rather than an authoritative solver. Current pilot prompts sometimes require explicit numerical chains; this boundary must be resolved and documented as technical debt before broad educational use.
+
+The pilot has shown that the engineering pipeline can run, but not that all candidate cards are correct. Known failures and follow-up are tracked in `tech-debt.md`; they do not justify another open-ended Prompt-tuning loop.
