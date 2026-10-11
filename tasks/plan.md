@@ -29,17 +29,17 @@
 - [x] Generate/Verify 判定测试通过：字段为空时生成，已有字段时独立核实。
 
 ### Phase 2: Pure Functions
-- [ ] Task 3: Markdown 卡片渲染器
-- [ ] Task 4: 每日看板随机抽题逻辑
+- [x] Task 3: Markdown 卡片渲染器（代码与单元测试已实现；Obsidian 手工渲染验收待做）
+- [x] Task 4: 每日看板随机抽题逻辑（代码与单元测试已实现）
 
 ### Checkpoint: Pure Functions
 - [ ] 渲染器输出包含正确的 Callout 和 LaTeX 原样保留。
 - [ ] 抽题逻辑能准确返回指定数量的不重复题目 ID。
 
 ### Phase 3: Pipeline Integration
-- [ ] Task 5: 主管道脚本、资产同步与 IO 写出
+- [x] Task 5: 主管道脚本、资产同步与 IO 写出（实现已完成；本次增加 force 失败时隔离旧卡的回归保护，需本地测试确认）
 - [x] Task 6: 旧题库导入适配器与 Canonical Schema 转换
-- [ ] Task 7: LLM Generate 输出契约强化与真实 Smoke Test
+- [x] Task 7: LLM Generate 输出契约（结构化实现完成；真实模型内容质量验收未通过，详见 tech-debt.md）
 
 ### Task 7: LLM Generate 输出契约强化
 
@@ -256,3 +256,23 @@ The current CLI aggregates saved review evidence; it does not automatically call
 
 
 - **Default-path safeguard:** `config.toml` now writes generated cards to `vault/FunnyTutor_EM_Candidates`, not the formal `vault/FunnyTutor_EM_Vault`. The explicit publisher is the intended promotion path.
+
+## 1.0 Traceability Review — Authoritative Status (2026-10-11)
+
+This section supersedes earlier historical checklist entries where their status wording is stale. Historical Task 7 smoke-test notes are retained as a record of why the quality gate was added; they are not a requirement to keep tuning the Prompt until Qwen passes every semantic check.
+
+| Workstream | Implementation status | Validation status | Decision |
+|---|---|---|---|
+| Task 1 — Schema / repository foundation | Complete | User reports `ruff` and `pytest` PASS; schema tests exist | Complete |
+| Task 2 — LiteLLM client and Generate/Verify mode | Complete as a client abstraction | Local Qwen Verify A/B evidence is recorded; provider comparison is not run | Complete for 1.0 pipeline |
+| Task 3 — Markdown renderer | Complete | Renderer tests exist; real Obsidian formula/image display not yet signed off | Implemented; GUI check deferred |
+| Task 4 — Daily index | Complete | Unit tests cover uniqueness, bounds, and rendering | Complete |
+| Task 5 — Pipeline, assets, incremental/force | Implemented | Integration tests cover generate, skip, force, failure continuation, dry-run; stale-card failure case added in latest change and awaits local test | Implemented; run latest regression suite |
+| Task 6 — Legacy to Canonical import | Complete for current fixture | Prior local evidence: 10 records converted, dry-run succeeded; annotation placeholders remain | Complete as adapter, not curated data |
+| Task 7 — Strict Generate output contract | Structural implementation complete | Real Qwen pilot has at least one malformed-text rejection and two content-level defects | Pipeline contract complete; content defects moved to tech debt |
+| Task 8 — Review evidence and publication | CLI/schema/prompt/tests implemented | Operator-run review CLI/publisher fixtures and real reviewed publication are not yet evidenced | Manual release workflow; validation remains |
+| 1.0 end-to-end | Main components are connected and pilot calls have run | Three-question pilot was not all successful; latest code change needs local test | **Engineering 1.0 candidate, not content-approved release** |
+
+### 1.0 close-out rule
+
+Do not block the pipeline milestone on making local Qwen perfect. Close the engineering loop by validating generation, failure isolation, incremental rerun, dashboard links, and candidate/publish separation. Then run the same fixed questions through Qwen and cloud models and record comparative outcomes. Never promote cards with unresolved critical errors; content failures are reviewed/corrected per card, not an invitation for unbounded shared-Prompt edits.
