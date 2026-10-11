@@ -395,3 +395,32 @@ LLM outputs are candidates, not trusted truth. Absolute correctness cannot be gu
 ### Candidate and formal Vault separation
 
 The default `config.toml` output is `vault/FunnyTutor_EM_Candidates`. Generated cards are candidates and must not be treated as approved knowledge-bank entries. The formal destination remains `vault/FunnyTutor_EM_Vault`; promotion must use `src/publish_reviewed.py` with the matching ACCEPT decision artifact. Do not point the generation config directly at the formal Vault.
+
+## 1.0 Release Scope and Traceability (2026-10-11)
+
+### What 1.0 means
+
+1.0 means the **engineering path from canonical source records to staged Obsidian candidate cards and a daily index is implemented and testable**. It does not mean all model-written explanations have passed semantic physics review, that 20 questions are curated, or that cloud-model comparison is complete.
+
+### Requirement-to-implementation status
+
+| Original requirement | Current implementation / evidence | 1.0 status |
+|---|---|---|
+| Canonical Pydantic model and legacy import | `src/schema.py`, `src/import_questions.py`; import tests and prior local conversion of 10 records | Implemented; imported knowledge/type/difficulty fields remain placeholders pending curation |
+| Configurable provider-neutral LLM client | `src/llm_client.py` + LiteLLM; current config targets local Ollama Qwen | Implemented; cloud providers not yet run through a comparative evaluation |
+| Strict Generate payload | Pydantic `FunnyTutorPayload`, Ollama JSON Schema response format, validation before render | Implemented for shape/types, not semantics |
+| Obsidian Markdown card | `src/markdown_renderer.py` with callouts, tags, knowledge links, options, images | Implemented; manual Obsidian rendering/image check still needed |
+| Daily dashboard | `src/daily_index.py` and pipeline rebuild | Implemented; dashboard should only link active cards |
+| Incremental generation and force mode | `src/generate_vault.py`; tests for skip/force behavior | Implemented; source-content hash invalidation remains deferred |
+| Asset sync | Pipeline copies `data/assets/` into Vault-local assets | Implemented; real image display in Obsidian not yet signed off |
+| Deterministic integrity gate | `src/quality_gate.py` rejects decoded control characters | Implemented; it catches certain serialization failures but does not validate LaTeX semantics |
+| Independent review and publication boundary | Review schemas/prompts, `src/review_gate.py`, `src/publish_reviewed.py` | Implemented as manual/evidence-file workflow; no automatic provider orchestration or trusted provenance |
+| 20-question curated MVP bank | Current legacy fixture contains 10 records and imported annotation placeholders | Not complete; defer beyond pipeline-first 1.0 |
+| OCR Inbox workflow, theme, measured learning benefit | Not in current runtime | Deferred; not 1.0 blockers |
+
+### Acceptance interpretation
+
+- Passing `ruff check src tests` and `pytest tests/ -v` verifies static and automated tests only.
+- A real LLM smoke test verifies the provider/runtime path; it does not establish teaching accuracy.
+- Pilot cards that fail content review remain candidates and must not be promoted to `vault/FunnyTutor_EM_Vault`.
+- Known content and workflow defects are recorded in `tech-debt.md`. The team should proceed to the planned cross-model comparison after the pipeline reliability checks, instead of repeatedly expanding the shared Prompt.
