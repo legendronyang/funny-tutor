@@ -26,11 +26,11 @@ It does **not** claim that every generated explanation is physically correct, th
 - [x] Pull latest `task/1-foundation-schema` and run `ruff check src tests` — user log confirms `All checks passed!`.
 - [x] Run `pytest tests/ -v`, including `test_force_failure_archives_old_card_and_excludes_it_from_dashboard` — user log confirms 83 passed in 3.11s.
 - [ ] Run `python src/import_questions.py` and `python src/generate_vault.py --config config.toml --dry-run`; verify current fixture count and canonical validation.
-- [ ] Run a small candidate generation with a known-good model response; verify card, assets, and daily dashboard.
-- [ ] Run the same command again without `--force`; verify no LLM calls occur for existing cards.
+- [x] Run a small three-question candidate generation to the Windows-local Vault; latest real Qwen run reports `total=3, generated=1, skipped=2, failed=0`, including successful bounded LaTeX escape recovery. Visual Obsidian/content review remains.
+- [x] Run the same command without `--force`; latest log confirms two existing cards were skipped without LLM calls.
 - [ ] Force a regeneration failure; verify the old card is moved under `.stale_candidates/` and not linked from the active dashboard.
 - [ ] Exercise `src/review_gate.py` with known passing and failing review evidence; exercise `src/publish_reviewed.py` to prove ACCEPT can publish and REVIEW/REJECT cannot.
-- [ ] Open the candidate Vault in Obsidian and manually check callouts, LaTeX, relative image paths and internal links.
+- [ ] Open `C:\Users\river\FunnyTutor_EM_Candidates` in Obsidian and manually check callouts, LaTeX, relative image paths and internal links. Verify all three cards, especially the newly generated capacitor card.
 - [ ] Mark the pipeline 1.0 engineering milestone complete only after the above checks pass. This does not mark generated educational content as approved.
 
 ## Next phase — model comparison, not more Prompt churn
