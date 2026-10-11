@@ -1,19 +1,31 @@
-该项目是借助于 https://github.com/addyosmani/agent-skills、WSL Ubuntu 中的本地 Ollama/Qwen3.5:9b 以及云端大模型一起开发实现的。
+# Funny Tutor
 
-| source file | status | used skill |
-| ----------- | ------ | ---------- |
-| idea.md | ready | idea-refine |
-| spec.md | ready | spec-driven-development |
-| tasks/plan.md | ready | planning-and-task-breakdown |
-| tasks/todo.md | ready | planning-and-task-breakdown |
-| utils/llm_client.py | reference only | 尚未作为 funny-tutor 代码验证 |
+Funny Tutor is a pipeline-first project that turns canonical electromagnetism question records into Obsidian-native study cards and a daily dashboard. Canonical JSON remains the source of truth; LLM-generated explanations are candidates, not trusted answers.
 
-## LLM architecture
+## 1.0 status
 
-Funny Tutor 通过统一 LLM Client + LiteLLM 路由模型。开发阶段默认使用 WSL Ubuntu 中 Ollama 的 `ollama_chat/qwen3.5:9b`；Generate 默认 `think=false`，Verify 默认 `think=true`；完成本地调试后，可以切换 Gemini、ChatGPT 等云端模型，对题库内容进行独立验证。
+The core engineering path is implemented: canonical schema/import, configurable LiteLLM client, strict Generate payload validation, Markdown renderer, daily dashboard, incremental generation, candidate Vault separation, and a manual evidence-based review/publish boundary.
 
-题库中的字段采用“缺失则生成、已有则独立核实”的策略。多个模型的验证结果应作为独立 evidence 保存，而不是让后调用的模型覆盖前一个模型的结果。
+The user has confirmed local `ruff check src tests` and `pytest tests/ -v` passed before the latest stale-card failure-handling regression was added. That newest change still needs local validation. The three-question real-Qwen pilot is **not content-approved**: two cards need physics-content correction, and one generation was rejected by the text-integrity gate.
 
-data/questions_em.json 当前只是少量历年真题开发 fixture，不定义正式题库 Schema；正式题库由 src/schema.py 中的 canonical model 定义，未来可以接收 OCR、人工录入或其他来源的数据后进行映射和补全。
+- Current actionable checklist: [tasks/todo.md](tasks/todo.md)
+- Requirements and implementation traceability: [spec.md](spec.md)
+- Detailed implementation history and decisions: [tasks/plan.md](tasks/plan.md)
+- Known limitations, failures and 1.0 exit criteria: [tech-debt.md](tech-debt.md)
 
-下一步按照 incremental-implementation Skill，从 Task 2 开始逐步实现，并在每个 task 完成后运行测试、lint 和必要的真实集成验证。
+## Run locally
+
+```bash
+python -m pip install -r requirements.txt
+python src/import_questions.py
+python src/generate_vault.py --config config.toml --dry-run
+ruff check src tests
+pytest tests/ -v
+python src/generate_vault.py --config config.toml
+```
+
+The default configuration writes to `vault/FunnyTutor_EM_Candidates`. Do not treat candidate cards as approved teaching content or generate directly into `vault/FunnyTutor_EM_Vault`. Promotion requires a matching ACCEPT decision artifact through `src/publish_reviewed.py`.
+
+## Current evaluation direction
+
+Freeze the shared Prompt for the first comparison experiment. Run the same representative questions through local Qwen and available cloud models (Gemini, ChatGPT, DeepSeek), save outputs separately, and compare them with a fixed rubric. Do not continue unbounded Prompt tuning to make one local-model output pass.
