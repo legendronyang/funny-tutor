@@ -184,6 +184,41 @@ def test_llm_failure_skips_one_question_and_continues(
     assert (vault / "00_今日电磁学吐槽.md").exists()
 
 
+def test_force_failure_archives_old_card_and_excludes_it_from_dashboard(
+    tmp_path: Path,
+    fake_client: Mock,
+) -> None:
+    questions = [
+        canonical_question("q1", ["磁与电磁感应", "电磁感应"]),
+        canonical_question("q2", ["磁与电磁感应", "磁场基础"]),
+    ]
+    questions_path = write_fixture(tmp_path, questions)
+    vault = tmp_path / "vault"
+    config = write_config(tmp_path, questions_path, tmp_path / "assets", vault)
+
+    stale_card = vault / "磁与电磁感应" / "电磁感应" / "q1.md"
+    stale_card.parent.mkdir(parents=True, exist_ok=True)
+    stale_card.write_text("# Stale candidate", encoding="utf-8")
+    fake_client.complete_json.side_effect = [
+        RuntimeError("decoded control characters"),
+        {
+            "funny_explanation": "本题先检查物理关系。",
+            "memory_aids": ["先列关系式。"],
+            "common_misconceptions": ["注意单位。"],
+        },
+    ]
+
+    stats = generate_vault(config_path=config, force=True)
+
+    assert stats == {"total": 2, "generated": 1, "skipped": 0, "failed": 1}
+    assert not stale_card.exists()
+    archived = vault / ".stale_candidates" / "磁与电磁感应" / "电磁感应" / "q1.md"
+    assert archived.read_text(encoding="utf-8") == "# Stale candidate"
+    dashboard = (vault / "00_今日电磁学吐槽.md").read_text(encoding="utf-8")
+    assert "[[q1]]" not in dashboard
+    assert "[[q2]]" in dashboard
+
+
 def test_dry_run_validates_without_llm_or_writes(
     tmp_path: Path,
     fake_client: Mock,
