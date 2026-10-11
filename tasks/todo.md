@@ -23,8 +23,8 @@ It does **not** claim that every generated explanation is physically correct, th
 
 ## Remaining 1.0 engineering validation
 
-- [ ] Pull latest `task/1-foundation-schema` and run `ruff check src tests`.
-- [ ] Run `pytest tests/ -v`, paying particular attention to `test_force_failure_archives_old_card_and_excludes_it_from_dashboard`.
+- [x] Pull latest `task/1-foundation-schema` and run `ruff check src tests` — user log confirms `All checks passed!`.
+- [x] Run `pytest tests/ -v`, including `test_force_failure_archives_old_card_and_excludes_it_from_dashboard` — user log confirms 83 passed in 3.11s.
 - [ ] Run `python src/import_questions.py` and `python src/generate_vault.py --config config.toml --dry-run`; verify current fixture count and canonical validation.
 - [ ] Run a small candidate generation with a known-good model response; verify card, assets, and daily dashboard.
 - [ ] Run the same command again without `--force`; verify no LLM calls occur for existing cards.
