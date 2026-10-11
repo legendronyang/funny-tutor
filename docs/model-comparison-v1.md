@@ -89,7 +89,7 @@ Use `experiments/model-comparison-v1/results.csv` as the run matrix. Raw outputs
 
 1. Snapshot the current Qwen cards into a read-only baseline folder.
 2. Check which provider key variables are configured without echoing secrets.
-3. Validate the newly added Gemini 3 temperature compatibility change with Ruff/Pytest before any cloud call.
+3. Pull and validate the newly added Gemini 3 temperature compatibility change with Ruff/Pytest before any cloud call.
 4. Start with one cloud provider, run the same three-question set into its own folder, and inspect latency/output. Only then run the other providers for which credentials are available.
 5. Compare all outputs with the fixed rubric. Correct individual cards when necessary; do not tune the shared Prompt after each single failure.
 6. Test `review_gate.py` and `publish_reviewed.py` with clearly synthetic pass/fail fixtures before using real review evidence. Synthetic fixtures are plumbing tests, never evidence that an actual card is correct.
