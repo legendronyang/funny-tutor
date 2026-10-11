@@ -25,7 +25,7 @@ The three-question Qwen pilot is **not content-approved**. Two generated cards s
 - **Impact:** Formula text may silently break if this boundary is bypassed.
 - **Current protection:** `src/quality_gate.py` rejects decoded control characters before rendering. Keep this rejection; do not weaken the gate.
 - **Mitigation:** Keep the control-character gate strict. A bounded parser-side repair was added for a small allowlist of recognizable TeX commands whose leading backslashes collide with JSON escapes (for example `\\frac`, `\\rho`, `\\text`, `\\times`). The repair logs when used, then the existing schema and integrity checks still run. Unknown/malformed escapes are not globally sanitized.
-- **Status:** Repair and focused regression tests committed; user must pull and run Ruff/pytest before using it. If the same card still fails, retain the failure rather than bypassing the gate.
+- **Status:** User pulled the fix; Ruff passed and all 85 pytest tests passed. A real Qwen run logged `Repaired 6 unescaped LaTeX command backslash(es)` and generated the capacitor card with `failed=0`. The Windows-local candidate Vault still needs visual inspection, and the generated explanation still needs content review. If another card fails, retain the failure rather than bypassing the gate.
 
 ### TD-003 — Failed forced generation can leave an old card at the active path
 
