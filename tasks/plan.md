@@ -47,16 +47,16 @@
 - Generate 使用 FunnyTutorPayload 严格校验，禁止额外 canonical 字段和错误嵌套类型。
 - generate_vault.py 在持久化前再次校验并采用 payload 字段白名单。
 - Prompt 与 Spec 同步定义三个允许输出键。
-- 本任务的最终验收必须包含一次真实 Qwen 单题 Smoke Test；通过后才允许进入 10 题全量生成。
+- 本任务的结构验收包含真实 Qwen Smoke Test；语义失败记录到 tech-debt.md，不以反复修改 Prompt 作为前置条件。完成生成失败隔离、增量行为与候选 Vault 检查后，可将固定题集用于本地与云端模型对比。
 - 首卡内容 Quality Gate 独立于结构化输出 Gate：检查矢量方向/大小、不臆断题设、单位与幂次、数量级、以及本题针对性的易错点。该检查当前是人工内容验收，不声称 Pydantic 能证明物理正确性。
 - 对于求电荷量大小的题目，质量 Gate 还要求在正文中始终使用绝对值公式（如 `|q|E=mg`、`|q|=mg/E`），并解释低于临界电荷量时电场力不足以平衡重力。方向不能凭空假定，但可以从题目明确支持的平衡条件推导。
 - 来源保护与生成准确性必须分层：canonical 原题/答案/官方解析严格只读，但 Funny Tutor 可以在新生成文本中独立给出更严谨的等价公式，不应因来源解析出现带符号表达就照抄到求电荷量大小的解释中。首题还要求明确展示 `r=1 mm=10^-3 m` 及 `r^3=(10^-3 m)^3=10^-9 m^3`。
 - 公式一致性必须逐段覆盖 `funny_explanation`、`memory_aids` 和 `common_misconceptions`；JSON 字符串中的 LaTeX 反斜杠须正确转义，最终 Markdown 不得出现由 `\r` 等转义造成的断裂公式。数量级解释需准确区分：将 `1 mm` 直接当作 `1 m` 导致 `10^9` 倍体积/质量/临界电荷误差；将 `r^3` 错写为 `10^-3 m^3` 而不是 `10^-9 m^3` 则相差 `10^6` 倍。
 
 ### Checkpoint: Complete
-- [ ] 增量生成逻辑生效，二次运行无多余 LLM 请求。
+- [x] 增量生成逻辑有自动化测试，二次运行跳过已有卡片且不调用 LLM。
 - [ ] 生成的 Vault 在 Obsidian 中图片加载与公式渲染正常。
-- [ ] 测试用例与代码静态检查全部通过。
+- [ ] 测试与静态检查曾在用户本地通过；最新新增的强制重生成失败归档测试尚待本地复跑。
 
 ## LLM Verification Contract
 
@@ -215,15 +215,15 @@
 
 ### Decision: stop rule to prevent endless Prompt edits
 
-1. Treat commit `7715fb8c92076e6786cf5c5801168deec92aad67` as the **Prompt-freeze candidate**. Run one more Smoke Test on the existing rain-drop item to verify the exact three-item misconception structure and ensure no internal instructions leak into the student card.
-2. If that test passes, do not keep tuning this Prompt for minor wording preferences. Freeze the Prompt and run a **3-question pilot**: the rain-drop item plus two distinct questions selected from the remaining bank, ideally with different reasoning/units. Record results in a pass/fail matrix.
+1. Treat commit `7715fb8c92076e6786cf5c5801168deec92aad67` as the historical **Prompt-freeze candidate**; the later three-question pilot has already exposed the remaining issues.
+2. The three-question pilot is complete as an experiment but did not pass content review. Preserve those results as baseline evidence for the model comparison rather than delaying the engineering milestone for another round of prompt tuning.
 3. For failures, classify them instead of automatically rewriting the shared Prompt:
    - JSON keys/types/extra fields → existing schema/structured-output boundary.
    - Explicit, deterministic constraints (required values/phrases, list count, forbidden meta-instructions) → add a small post-generation validator and tests where practical.
    - Physics validity, omitted reasoning, or subtle contradictions → independent reviewer/checklist and manual review; do not assume JSON Schema can catch semantics.
    - Cosmetic wording differences with correct meaning → accept, not a defect.
-4. Limit the pilot to **at most one Prompt revision** after the freeze candidate. Reopen a shared Prompt rule only if the same material defect recurs in at least two distinct questions, or a single critical physics error warrants immediate correction. If an individual question still fails, mark it for review instead of entering an automatic retry loop.
-5. After the 3-question pilot, generate the remaining questions once, inspect all ten outputs with a fixed rubric, and mark any failing card for manual correction/review. No unbounded retries and no batch processing that silently treats generation success as content-quality success.
+4. Keep the shared Prompt frozen during the first cross-model comparison. Reopen a shared Prompt rule only for a critical systemic issue or the same material defect recurring across distinct questions.
+5. Proceed to candidate generation for the fixed comparison set after validating the latest pipeline changes. Inspect outputs with a fixed rubric and route failing cards to manual correction/review; do not treat generation success as content-quality success.
 
 ### Root-cause assessment
 
