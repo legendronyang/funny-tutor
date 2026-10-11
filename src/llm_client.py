@@ -72,21 +72,21 @@ def _repair_unescaped_latex_commands(raw_json: str) -> tuple[str, int]:
             index += 1
             continue
 
-        if char == "\\\\":
+        if char == "\\":
             if index + 1 >= len(raw_json):
                 output.append(char)
                 index += 1
                 continue
 
             next_char = raw_json[index + 1]
-            if next_char == "\\\\":
+            if next_char == "\\":
                 # Already escaped in valid JSON.
                 output.extend((char, next_char))
                 index += 2
                 continue
 
             if _is_latex_command_at(raw_json, index + 1):
-                output.extend(("\\\\", "\\\\"))
+                output.extend(("\\", "\\"))
                 repairs += 1
                 index += 1
                 continue
