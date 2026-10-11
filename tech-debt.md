@@ -24,8 +24,8 @@ The three-question Qwen pilot is **not content-approved**. Two generated cards s
 - **Evidence:** The capacitor generation was rejected because decoded `funny_explanation` contained forbidden control characters `U+000C` (form feed) and `U+0009` (tab). JSON escapes such as `\\f` or `\\t` can transform an intended LaTeX command into a control character if the model emits invalidly escaped JSON.
 - **Impact:** Formula text may silently break if this boundary is bypassed.
 - **Current protection:** `src/quality_gate.py` rejects decoded control characters before rendering. Keep this rejection; do not weaken the gate.
-- **Mitigation:** Add bounded, targeted retry/repair only if the product needs it; otherwise fail the card visibly and continue the batch. Any retry must pass the same parser, schema and integrity checks. Inspect final Markdown for intact formulas.
-- **Status:** Gate implemented; targeted repair/retry not implemented.
+- **Mitigation:** Keep the control-character gate strict. A bounded parser-side repair was added for a small allowlist of recognizable TeX commands whose leading backslashes collide with JSON escapes (for example `\\frac`, `\\rho`, `\\text`, `\\times`). The repair logs when used, then the existing schema and integrity checks still run. Unknown/malformed escapes are not globally sanitized.
+- **Status:** Repair and focused regression tests committed; user must pull and run Ruff/pytest before using it. If the same card still fails, retain the failure rather than bypassing the gate.
 
 ### TD-003 — Failed forced generation can leave an old card at the active path
 
