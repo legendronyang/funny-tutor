@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 from dataclasses import dataclass
@@ -19,6 +20,88 @@ try:
 except ImportError:  # pragma: no cover - supports direct script execution
     from quality_gate import validate_generated_payload_text
     from schema import FunnyTutorPayload
+
+LOGGER = logging.getLogger(__name__)
+
+# These TeX commands begin with letters that are also valid JSON escape
+# introducers (\\b, \\f, \\n, \\r, \\t). If a model emits one backslash in a
+# JSON string, json.loads may turn the command prefix into a control char.
+# Repair only recognizable TeX command names; unknown controls stay rejected.
+_LATEX_COMMANDS = tuple(sorted({
+    "begin", "big", "Big", "bigg", "Bigg", "bf", "boldsymbol", "boxed",
+    "brack", "frac", "fbox", "neq", "nabla", "nexists", "not", "rho",
+    "right", "rightarrow", "rangle", "rm", "text", "textbf", "textit",
+    "texttt", "times", "theta", "tilde", "tau", "tan", "triangle",
+    "top", "to", "therefore", "tfrac", "thinspace", "thickspace",
+}, key=len, reverse=True))
+
+
+def _is_latex_command_at(text: str, index: int) -> bool:
+    for command in _LATEX_COMMANDS:
+        if not text.startswith(command, index):
+            continue
+        end = index + len(command)
+        if end == len(text) or not text[end].isalnum():
+            return True
+    return False
+
+
+def _repair_unescaped_latex_commands(raw_json: str) -> tuple[str, int]:
+    """Double single backslashes for known TeX commands inside JSON strings.
+
+    Correct JSON escapes are left untouched. This narrow repair is not general
+    JSON sanitization; all remaining decoded controls are rejected downstream.
+    """
+    output: list[str] = []
+    in_string = False
+    repairs = 0
+    index = 0
+
+    while index < len(raw_json):
+        char = raw_json[index]
+        if not in_string:
+            output.append(char)
+            if char == '"':
+                in_string = True
+            index += 1
+            continue
+
+        if char == '"':
+            output.append(char)
+            in_string = False
+            index += 1
+            continue
+
+        if char == "\\\\":
+            if index + 1 >= len(raw_json):
+                output.append(char)
+                index += 1
+                continue
+
+            next_char = raw_json[index + 1]
+            if next_char == "\\\\":
+                # Already escaped in valid JSON.
+                output.extend((char, next_char))
+                index += 2
+                continue
+
+            if _is_latex_command_at(raw_json, index + 1):
+                output.extend(("\\\\", "\\\\"))
+                repairs += 1
+                index += 1
+                continue
+
+            # Consume ordinary JSON escape pairs together so escaped quotes
+            # do not accidentally terminate a JSON string.
+            output.extend((char, next_char))
+            index += 2
+            continue
+
+        output.append(char)
+        index += 1
+
+    return "".join(output), repairs
+
 
 GenerationMode = Literal["generate", "verify"]
 
@@ -56,11 +139,20 @@ def parse_json_response(raw_text: str, question_id: str) -> dict[str, Any]:
     candidate = _strip_code_fence(raw_text)
     decoder = json.JSONDecoder()
     for match in re.finditer(r"\{", candidate):
+        candidate_json = candidate[match.start() :]
+        repaired_json, repair_count = _repair_unescaped_latex_commands(candidate_json)
         try:
-            value, _ = decoder.raw_decode(candidate[match.start() :])
+            value, _ = decoder.raw_decode(repaired_json)
         except json.JSONDecodeError:
             continue
         if isinstance(value, dict):
+            if repair_count:
+                LOGGER.warning(
+                    "Repaired %d unescaped LaTeX command backslash(es) in response for %s; "
+                    "the decoded text will still be checked for forbidden controls",
+                    repair_count,
+                    question_id,
+                )
             return value
 
     raise LLMResponseError(
