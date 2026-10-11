@@ -150,8 +150,6 @@ def generate_vault(
     daily_count = int(config.get("daily", {}).get("count", 3))
 
     questions = _load_questions(questions_path)
-    question_ids = [question.id for question in questions]
-
     if dry_run:
         return {"total": len(questions), "generated": 0, "skipped": 0, "failed": 0}
 
