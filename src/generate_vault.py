@@ -74,6 +74,22 @@ def _question_path(vault_dir: Path, question: EMQuestion) -> Path:
     return vault_dir.joinpath(*relative_parts, f"{question.id}.md")
 
 
+def _archive_stale_card(vault_dir: Path, target: Path) -> Path:
+    """Move a previous card out of the active Vault if forced regeneration fails."""
+    archive = vault_dir / ".stale_candidates" / target.relative_to(vault_dir)
+    archive.parent.mkdir(parents=True, exist_ok=True)
+
+    destination = archive
+    suffix = 1
+    while destination.exists():
+        destination = archive.with_name(f"{archive.name}.{suffix}")
+        suffix += 1
+
+    target.replace(destination)
+    LOGGER.warning("ARCHIVED stale candidate -> %s", destination)
+    return destination
+
+
 def _question_prompt(question: EMQuestion) -> str:
     """Build the provider-neutral Funny Tutor generation/verification prompt."""
     context: dict[str, Any] = {
@@ -148,12 +164,14 @@ def generate_vault(
     generated = 0
     skipped = 0
     failed = 0
+    dashboard_question_ids: list[str] = []
 
     for question in questions:
         target = _question_path(vault_dir, question)
         if target.exists() and not force:
             LOGGER.info("SKIP %s: Markdown card already exists", question.id)
             skipped += 1
+            dashboard_question_ids.append(question.id)
             continue
 
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -188,15 +206,30 @@ def generate_vault(
             )
             target.write_text(markdown, encoding="utf-8")
             generated += 1
+            dashboard_question_ids.append(question.id)
             LOGGER.info("GENERATED %s -> %s", question.id, target)
         except Exception:
             failed += 1
             LOGGER.exception("SKIP %s: LLM/rendering failed", question.id)
+            # A failed --force run must not leave an older card looking current.
+            if force and target.exists():
+                try:
+                    _archive_stale_card(vault_dir, target)
+                except OSError:
+                    LOGGER.exception(
+                        "Could not archive stale card for %s; it remains at %s",
+                        question.id,
+                        target,
+                    )
             continue
 
     dashboard = vault_dir / "00_今日电磁学吐槽.md"
     dashboard.write_text(
-        build_daily_index(question_ids, daily_count, title="## 今日电磁学吐槽"),
+        build_daily_index(
+            dashboard_question_ids,
+            daily_count,
+            title="## 今日电磁学吐槽",
+        ),
         encoding="utf-8",
     )
     return {
