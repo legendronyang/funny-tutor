@@ -30,13 +30,13 @@ def test_parse_json_response_accepts_common_wrappers() -> None:
 
 
 def test_parse_json_response_repairs_common_unescaped_latex_commands() -> None:
-    raw = String.raw`{"funny_explanation":"$\\frac{1}{2}$ and $\\rho V$, plus \\text{unit}"} `
+    raw = r'{"funny_explanation":"$\frac{1}{2}$ and $\rho V$, plus \text{unit}"} '
     parsed = parse_json_response(raw, "em-latex-repair")
     assert parsed["funny_explanation"] == r"$\frac{1}{2}$ and $\rho V$, plus \text{unit}"
 
 
 def test_parse_json_response_preserves_already_escaped_latex_commands() -> None:
-    raw = String.raw`{"funny_explanation":"$\\\\frac{1}{2}$"} `
+    raw = r'{"funny_explanation":"$\\frac{1}{2}$"} '
     parsed = parse_json_response(raw, "em-latex-valid")
     assert parsed["funny_explanation"] == r"$\frac{1}{2}$"
 
