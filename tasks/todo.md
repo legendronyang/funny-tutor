@@ -24,20 +24,20 @@ It does **not** claim that every generated explanation is physically correct, th
 ## Remaining 1.0 engineering validation
 
 - [x] Pull latest `task/1-foundation-schema` and run `ruff check src tests` — user log confirms `All checks passed!`.
-- [x] Run `pytest tests/ -v`, including `test_force_failure_archives_old_card_and_excludes_it_from_dashboard` — user log confirms 83 passed in 3.11s.
+- [x] Run `pytest tests/ -v`, including `test_force_failure_archives_old_card_and_excludes_it_from_dashboard` — user log confirms 85 passed in 6.03s in the latest user-provided pre-Gemini-compatibility-change run.
 - [ ] Run `python src/import_questions.py` and `python src/generate_vault.py --config config.toml --dry-run`; verify current fixture count and canonical validation.
 - [x] Run a small three-question candidate generation to the Windows-local Vault; latest real Qwen run reports `total=3, generated=1, skipped=2, failed=0`, including successful bounded LaTeX escape recovery. Visual Obsidian/content review remains.
 - [x] Run the same command without `--force`; latest log confirms two existing cards were skipped without LLM calls.
 - [ ] Force a regeneration failure; verify the old card is moved under `.stale_candidates/` and not linked from the active dashboard.
 - [ ] Exercise `src/review_gate.py` with known passing and failing review evidence; exercise `src/publish_reviewed.py` to prove ACCEPT can publish and REVIEW/REJECT cannot.
-- [ ] Open `C:\Users\river\FunnyTutor_EM_Candidates` in Obsidian and manually check callouts, LaTeX, relative image paths and internal links. Verify all three cards, especially the newly generated capacitor card.
+- [x] Open `C:\Users\river\FunnyTutor_EM_Candidates` in Obsidian; user confirms all three cards display normally. Note: image rendering remains unverified if the three pilot cards contain no image references.
 - [ ] Mark the pipeline 1.0 engineering milestone complete only after the above checks pass. This does not mark generated educational content as approved.
 
 ## Next phase — model comparison, not more Prompt churn
 
-- [ ] Freeze the current shared Prompt during the comparison experiment.
-- [ ] Select a fixed, representative set of questions including the three pilot cases.
-- [ ] Generate candidate outputs from local Qwen and cloud Gemini / ChatGPT / DeepSeek where available; record model/version, config, latency, parse/integrity outcome and review rubric results.
+- [x] Freeze the current shared Prompt during the comparison experiment; protocol and result matrix committed.
+- [x] Select and freeze the three-question set; protocol is in `docs/model-comparison-v1.md`.
+- [ ] Snapshot the current Qwen outputs; generate cloud candidates for providers whose credentials are available. Record outcomes in `experiments/model-comparison-v1/results.csv`.
 - [ ] Compare correctness, reasoning completeness, formula/unit integrity, LaTeX integrity, student clarity, and runtime/cost. Do not overwrite one model's result with another's.
 - [ ] Send failed cards to per-card correction/manual review; revise the shared Prompt only if the same material defect recurs across distinct questions or a critical systemic defect is found.
 
