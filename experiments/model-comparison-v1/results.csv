@@ -1,0 +1,15 @@
+# Model comparison results v1
+# Qwen statuses record generation only; semantic content review remains pending.
+question_id,topic,configured_model,run_status,elapsed_seconds,schema_ok,integrity_ok,answer_correctness,physics_reasoning,formula_units,numerical_consistency,latex_integrity,student_clarity_0to2,memory_aids_0to2,misconceptions_0to2,reviewer_1,reviewer_2,decision,output_path,evidence_notes
+em-2010-1-231c7037ec,Raindrop equilibrium,ollama_chat/qwen3.5:9b-opencode,GENERATED,,PASS,PASS,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,,,,,,PENDING_REVIEW,qwen-baseline/em-2010-1-231c7037ec.md,Generation was successful; content has not been signed off.
+em-2010-1-231c7037ec,Raindrop equilibrium,gemini/gemini-3.8-flash,PENDING,,,,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,,,,,,PENDING_REVIEW,,
+em-2010-1-231c7037ec,Raindrop equilibrium,openai/gpt-6-luna,PENDING,,,,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,,,,,,PENDING_REVIEW,,
+em-2010-1-231c7037ec,Raindrop equilibrium,deepseek/deepseek-v4-flash,PENDING,,,,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,,,,,,PENDING_REVIEW,,
+em-2015-20-fba9b68081,Particle entering weaker magnetic field,ollama_chat/qwen3.5:9b-opencode,GENERATED,,PASS,PASS,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,,,,,,PENDING_REVIEW,qwen-baseline/em-2015-20-fba9b68081.md,Generation was successful; content has not been signed off.
+em-2015-20-fba9b68081,Particle entering weaker magnetic field,gemini/gemini-3.8-flash,PENDING,,,,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,,,,,,PENDING_REVIEW,,
+em-2015-20-fba9b68081,Particle entering weaker magnetic field,openai/gpt-6-luna,PENDING,,,,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,,,,,,PENDING_REVIEW,,
+em-2015-20-fba9b68081,Particle entering weaker magnetic field,deepseek/deepseek-v4-flash,PENDING,,,,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,,,,,,PENDING_REVIEW,,
+em-2016-24-4390f8caaf,Capacitor dielectric removed,ollama_chat/qwen3.5:9b-opencode,GENERATED,,PASS,PASS,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,,,,,,PENDING_REVIEW,qwen-baseline/em-2016-24-4390f8caaf.md,Generation was successful; content has not been signed off.
+em-2016-24-4390f8caaf,Capacitor dielectric removed,gemini/gemini-3.8-flash,PENDING,,,,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,,,,,,PENDING_REVIEW,,
+em-2016-24-4390f8caaf,Capacitor dielectric removed,openai/gpt-6-luna,PENDING,,,,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,,,,,,PENDING_REVIEW,,
+em-2016-24-4390f8caaf,Capacitor dielectric removed,deepseek/deepseek-v4-flash,PENDING,,,,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,NOT_REVIEWED,,,,,,PENDING_REVIEW,,
