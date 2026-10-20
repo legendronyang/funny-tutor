@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Capture a JavaScript-rendered Kimi biology outline page as Markdown.
+"""Capture a JavaScript-rendered biology outline site as Markdown.
 
-Usage:
+Install and run:
   python -m pip install playwright
   python -m playwright install chromium
   python scripts/scrape_kimi_biology_outline.py
 
-The script intentionally saves rendered page text rather than claiming to
-reconstruct hidden application data. Review the output for navigation
-duplicates, truncation notices, missing sections, or failed expansion.
+When the site does not load in headless mode, use --headed to inspect it.
+This captures browser-rendered text; it does not recover data hidden behind
+authentication, failed network requests, or inaccessible application APIs.
 """
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ DEFAULT_OUTPUT = "docs/gaokao-biology-kimi-site-capture.md"
 
 
 def clean_lines(text: str) -> list[str]:
-    """Trim boilerplate and collapse excessive blank lines without deleting content."""
+    """Normalize whitespace and remove only obvious standalone UI controls."""
     result: list[str] = []
     previous_blank = False
     skip_exact = {
@@ -57,14 +57,13 @@ def clean_lines(text: str) -> list[str]:
 
 
 def convert_to_markdown(lines: list[str]) -> str:
-    """Promote obvious numbered module headings while preserving other lines."""
+    """Promote numbered outline rows to headings while preserving their labels."""
     converted: list[str] = []
     numbered_heading = re.compile(r"^(\d+(?:\.\d+){0,3})[.、]?\s+(.+)$")
     for line in lines:
         match = numbered_heading.match(line)
         if match:
-            depth = match.group(1).count(".") + 2
-            depth = min(depth, 6)
+            depth = min(match.group(1).count(".") + 2, 6)
             converted.append("#" * depth + " " + line)
         elif line in {"目录导航", "高考生物考纲详解"}:
             converted.append("## " + line)
@@ -73,62 +72,102 @@ def convert_to_markdown(lines: list[str]) -> str:
     return "\n".join(converted).strip() + "\n"
 
 
+def click_expand_all(page) -> str:
+    """Try common button and text locators, without toggling each nested row."""
+    candidates = [
+        page.get_by_role("button", name=re.compile("全部展开")),
+        page.get_by_text("全部展开", exact=True),
+    ]
+    for locator in candidates:
+        try:
+            count = locator.count()
+            for index in range(min(count, 5)):
+                item = locator.nth(index)
+                if item.is_visible():
+                    item.click(timeout=4000)
+                    page.wait_for_timeout(1200)
+                    return "已点击“全部展开”；仍需检查输出是否覆盖所有节点。"
+        except PlaywrightTimeoutError:
+            continue
+        except Exception:
+            continue
+    return "未能确认“全部展开”控件可用；已尝试保存可见文本。"
+
+
+def scroll_for_lazy_content(page, max_rounds: int = 16) -> str:
+    """Scroll progressively so pages that load sections on demand get a chance to render."""
+    stable_rounds = 0
+    previous_height = -1
+    try:
+        for _ in range(max_rounds):
+            height = page.evaluate(
+                "() => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)"
+            )
+            page.evaluate("() => window.scrollBy(0, Math.max(window.innerHeight, 700))")
+            page.wait_for_timeout(350)
+            new_height = page.evaluate(
+                "() => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)"
+            )
+            if new_height == previous_height == height:
+                stable_rounds += 1
+            else:
+                stable_rounds = 0
+            previous_height = new_height
+            if stable_rounds >= 3:
+                break
+        page.evaluate("() => window.scrollTo(0, 0)")
+        page.wait_for_timeout(250)
+        return f"已执行懒加载滚动检查（最多 {max_rounds} 轮）。"
+    except Exception as exc:
+        return f"滚动检查未完成：{type(exc).__name__}: {exc}"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--url", default=DEFAULT_URL, help="Target page URL")
     parser.add_argument(
-        "--output",
-        default=DEFAULT_OUTPUT,
-        help=f"Markdown output path (default: {DEFAULT_OUTPUT})",
+        "--output", default=DEFAULT_OUTPUT, help=f"Markdown path (default: {DEFAULT_OUTPUT})"
     )
-    parser.add_argument(
-        "--timeout-ms",
-        type=int,
-        default=60000,
-        help="Navigation timeout in milliseconds",
-    )
+    parser.add_argument("--timeout-ms", type=int, default=60000, help="Navigation timeout")
+    parser.add_argument("--headed", action="store_true", help="Show Chromium UI for debugging")
     args = parser.parse_args()
 
     page_title = ""
     page_url = args.url
     page_text = ""
-    expansion_note = "未确认是否成功展开全部节点。"
+    capture_notes: list[str] = []
 
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
+        browser = playwright.chromium.launch(headless=not args.headed)
         page = browser.new_page(viewport={"width": 1440, "height": 1000})
+        page.set_default_timeout(10000)
         try:
-            page.goto(
+            response = page.goto(
                 args.url,
                 wait_until="domcontentloaded",
                 timeout=args.timeout_ms,
             )
+            status = response.status if response else "no response object"
+            capture_notes.append(f"HTTP status: {status}")
             try:
                 page.wait_for_load_state("networkidle", timeout=10000)
             except PlaywrightTimeoutError:
-                # Some single-page applications keep network connections open.
-                pass
+                capture_notes.append("networkidle 未达成（SPA 或长连接可能导致），继续抓取 DOM。")
             page.wait_for_timeout(1500)
 
             page_title = page.title().strip()
             page_url = page.url
-
-            # The page currently displays a "全部展开" control in its index.
-            expand = page.get_by_role("button", name=re.compile("全部展开"))
-            try:
-                if expand.count() > 0:
-                    expand.first.click(timeout=5000)
-                    page.wait_for_timeout(1200)
-                    expansion_note = "已点击“全部展开”控件；请检查输出确认所有内容确实展开。"
-                else:
-                    expansion_note = "未发现“全部展开”按钮；已保存当前浏览器可见文本。"
-            except PlaywrightTimeoutError:
-                expansion_note = "发现展开控件但点击超时；已保存当前浏览器可见文本。"
-
-            page_text = page.locator("body").inner_text(timeout=10000)
-        except Exception as exc:  # noqa: BLE001 - record the browser failure for diagnosis
+            capture_notes.append(click_expand_all(page))
+            capture_notes.append(scroll_for_lazy_content(page))
+            page_text = page.locator("body").inner_text(timeout=15000)
+        except Exception as exc:  # noqa: BLE001 - report browser failures to the caller
             print(f"抓取失败：{type(exc).__name__}: {exc}", file=sys.stderr)
-            browser.close()
+            try:
+                screenshot = Path("/tmp/kimi-biology-capture-error.png")
+                page.screenshot(path=str(screenshot), full_page=True)
+                print(f"诊断截图：{screenshot}", file=sys.stderr)
+            except Exception:
+                pass
             return 2
         finally:
             browser.close()
@@ -138,15 +177,14 @@ def main() -> int:
     captured_at = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
     header = (
         "# 高考生物考纲详解：浏览器渲染文本捕获\n\n"
-        f"- Source URL: {page_url}\n"
-        f"- Page title: {page_title or '(title unavailable)'}\n"
-        f"- Captured at: {captured_at}\n"
-        f"- Expansion: {expansion_note}\n"
-        "- Capture mode: Playwright Chromium; this is rendered text, not a byte-for-byte HTML archive.\n\n"
-        "> Review this artifact before treating it as complete. If the page uses lazy loading, "
-        "pagination, virtualized lists, or nested accordions, expand/scroll through all sections "
-        "and compare the resulting headings with the site's navigation.\n\n"
-        "---\n\n"
+        f"- 来源 URL：{page_url}\n"
+        f"- 页面标题：{page_title or '（无法读取）'}\n"
+        f"- 捕获时间：{captured_at}\n"
+        + "".join(f"- 抓取记录：{note}\n" for note in capture_notes)
+        + "- 抓取方式：Playwright Chromium 读取渲染后的页面文本；不是逐字节 HTML 镜像。\n\n"
+        + "> 完整性检查：确认所有目录节点均已展开；核对最末模块与子模块编号；检查是否存在分页、"
+        + "虚拟列表、登录限制或加载失败。如果输出不完整，可运行 --headed 观察页面并调整脚本。\n\n"
+        + "---\n\n"
     )
 
     output = Path(args.output)
@@ -154,8 +192,9 @@ def main() -> int:
     output.write_text(header + body, encoding="utf-8")
     print(f"已保存：{output.resolve()}")
     print(f"文本行数：{len(lines)}")
-    print(f"标题：{page_title or '(title unavailable)'}")
-    print(f"展开状态：{expansion_note}")
+    print(f"页面标题：{page_title or '（无法读取）'}")
+    for note in capture_notes:
+        print(f"- {note}")
     return 0
 
 
